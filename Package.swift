@@ -6,18 +6,29 @@ import PackageDescription
 let package = Package(
     name: "DSBridge",
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "DSBridge",
-            targets: ["DSBridge"]),
+            targets: ["DSBridge"]
+        ),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/wickwirew/Runtime/", .upToNextMajor(from: "2.2.5"))
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "DSBridge"),
+            name: "DSBridge",
+            dependencies: [
+                "CHelper",
+                "Runtime"
+            ]
+        ),
+        .target(
+            name: "CHelper",
+            publicHeadersPath: "./"
+        ),
         .testTarget(
             name: "DSBridgeTests",
-            dependencies: ["DSBridge"]),
+            dependencies: ["DSBridge"]
+        ),
     ]
 )

@@ -1,0 +1,12 @@
+//
+//  module.map.modulemap
+//  
+//
+//  Created by iMoe Nya on 2024/3/21.
+//
+
+module CHelper {
+    header "CHelper.h"
+    link "CHelper"
+    export *
+}
