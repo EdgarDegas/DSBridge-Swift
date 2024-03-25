@@ -26,8 +26,9 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
     private let evaluating: (JavaScript) -> Void
     private var incrementalID: Int = 0
     private var completionByID: [Int: Completion] = [:]
-    private var waitingScripts: [String] = []
+    private var waitingScripts: JavaScript = ""
     private var initialized = false
+    private lazy var metronome = Metronome(timeInterval: 0.05, queue: serialQueue)
     
     /// Serial queue to access properties and evaluate scripts.
     private let serialQueue = DispatchQueue(
@@ -37,12 +38,34 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
     
     public init(evaluating: @escaping (JavaScript) -> Void) {
         self.evaluating = evaluating
+        metronome.eventHandler = { [weak self] in
+            guard let self else { return }
+            guard initialized else { return }
+            flush()
+        }
+    }
+    
+    open func handleResponse(_ response: FromJS.Response) {
+        serialQueue.async { [weak self] in
+            guard
+                let self,
+                let completion = completionByID[response.id]
+            else {
+                return
+            }
+            defer {
+                if response.completed {
+                    completionByID.removeValue(forKey: response.id)
+                }
+            }
+            completion(response.data)
+        }
     }
     
     open func evaluate(_ javaScript: JavaScript) {
         serialQueue.async { [weak self] in
             guard let self else { return }
-            performEvaluation(javaScript)
+            enqueue(javaScript)
         }
     }
     
@@ -50,7 +73,6 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
         serialQueue.async { [weak self] in
             guard let self else { return }
             initialized = true
-            evaluateWaitingScripts()
         }
     }
     
@@ -70,37 +92,16 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
         }
     }
     
-    open func handleResponse(_ response: FromJS.Response) {
-        serialQueue.async { [weak self] in
-            guard 
-                let self,
-                let completion = completionByID[response.id]
-            else {
-                return
-            }
-            defer {
-                if response.completed {
-                    completionByID.removeValue(forKey: response.id)
-                }
-            }
-            completion(response.data)
-        }
-    }
-    
-    private func performEvaluation(_ script: String) {
-        guard initialized else {
-            waitingScripts.append(script)
-            return
-        }
-        evaluating(script)
-    }
-    
-    private func evaluateWaitingScripts() {
+    private func flush() {
         let scripts = waitingScripts
-        waitingScripts = []
-        for script in scripts {
-            performEvaluation(script)
-        }
+        waitingScripts = ""
+        evaluating(scripts)
+        metronome.suspend()
+    }
+    
+    private func enqueue(_ script: String) {
+        waitingScripts.append("\n\(script)")
+        metronome.resume()
     }
     
     private func call(
@@ -116,6 +117,6 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
         }
         """
         let script = "window._handleMessageFromNative(\(message))"
-        performEvaluation(script)
+        enqueue(script)
     }
 }
