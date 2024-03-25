@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol InterfaceForJS {
+public protocol ExposedInterface {
     func hasMethod(named name: String) -> Bool
     func handle(calling methodName: String, with parameter: Any?) -> Any?
     func handle(calling methodName: String, with parameter: Any?, completion: @escaping (Any?, Bool) -> Void)

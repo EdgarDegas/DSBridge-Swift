@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by iMoe Nya on 2024/3/23.
 //
@@ -11,7 +11,7 @@ public struct Response {
     public var code: Code
     public var data: Any
     
-    var asDictionary: [String: Any] {
+    public var asDictionary: [String: Any] {
         [
             Self.codeKey: code.rawValue,
             Self.dataKey: data
@@ -19,7 +19,11 @@ public struct Response {
     }
     
     static var empty: Self {
-        Response(code: .failure, data: "")
+        Response(code: .unhandled, data: "")
+    }
+    
+    static var emptyJSON: JSON {
+        #"{"data":"","code":-1}"#
     }
     
     public init(code: Code, data: Any?) {
@@ -28,7 +32,7 @@ public struct Response {
     }
     
     public enum Code: Int, Encodable {
-        case failure = -1
+        case unhandled = -1
         case success = 0
     }
     
@@ -38,5 +42,17 @@ public struct Response {
     
     public static var codeKey: String {
         "code"
+    }
+}
+
+public struct AsyncResponse {
+    public var functionName: String
+    public var data: Any
+    public var completed: Bool
+    
+    public init(functionName: String, data: Any?, completed: Bool) {
+        self.functionName = functionName
+        self.data = data ?? ""
+        self.completed = completed
     }
 }

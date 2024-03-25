@@ -2,15 +2,18 @@ import XCTest
 @testable import DSBridge
 
 @Exposed
-final class ExampleInterfaceForJS {
+final class ExampleExposedInterface {
     var f1Invoked = false
     var f2InvokedWithParameter: String?
     static var f3ReturnValue: String {
         "F3"
     }
+    
     static var f4ReturnValue: (String, Bool) {
         ("F4", true)
     }
+    
+    var f5PassedInParameter: Bool!
     static var f5ReturnValue: (Int, Bool) {
         (5, false)
     }
@@ -19,6 +22,7 @@ final class ExampleInterfaceForJS {
     func reset() {
         f1Invoked = false
         f2InvokedWithParameter = nil
+        f5PassedInParameter = nil
     }
     
     func f1() {
@@ -38,89 +42,109 @@ final class ExampleInterfaceForJS {
     }
     
     func f5(flag: Bool, completion: @escaping (Int, Bool) -> Void) {
+        f5PassedInParameter = flag
         completion(Self.f5ReturnValue.0, Self.f5ReturnValue.1)
     }
 }
 
 final class InvocationDispatchingTests: XCTestCase {
-    lazy var dispatcher: JSInvocationDispatcher = {
-        let dispatcher = JSInvocationDispatcher()
+    lazy var dispatcher: InvocationDispatcher = {
+        let dispatcher = InvocationDispatcher { [unowned self] asyncResponse in
+            self.asyncResponse = asyncResponse
+        }
         dispatcher.addInterface(
             exampleInterface, by: exampleNamespace
         )
         return dispatcher
     }()
+    var asyncResponse: AsyncResponse!
     let exampleNamespace = "exampleNamespace"
-    let exampleInterface = ExampleInterfaceForJS()
+    let exampleInterface = ExampleExposedInterface()
     
     override func setUp() {
         exampleInterface.reset()
+        asyncResponse = nil
     }
     
     func testInvokingNoParameterNoReturn() throws {
-        _ = dispatcher.handle(
-            JSInvocation(
-                method: MethodForJS(
+        let returned = dispatcher.dispatch(
+            IncomingInvocation(
+                method: Method(
                     namespace: exampleNamespace, name: "f1"
                 ),
-                signature: JSInvocation.Signature(parameter: nil, callback: nil)
+                signature: IncomingInvocation.Signature(parameter: nil, callbackFunctionName: nil)
             )
-        ) { response, completed in
-            print(response, completed)
-        }
+        )
+        XCTAssert(returned.code == .success)
+        XCTAssert(returned.data as! String == "")
         XCTAssertTrue(exampleInterface.f1Invoked)
     }
     
     func testInvokingStringParameterNoReturn() throws {
         let data = "string value"
-        _ = dispatcher.handle(
-            JSInvocation(
-                method: MethodForJS(
+        let returned = dispatcher.dispatch(
+            IncomingInvocation(
+                method: Method(
                     namespace: exampleNamespace, name: "f2"
                 ),
-                signature: JSInvocation.Signature(parameter: "string value", callback: nil)
-            ),
-            callback: nil
+                signature: IncomingInvocation.Signature(parameter: data, callbackFunctionName: nil)
+            )
         )
+        XCTAssert(returned.code == .success)
+        XCTAssert(returned.data as! String == "")
         XCTAssert(exampleInterface.f2InvokedWithParameter == data)
     }
     
     func testInvokingNonParameterReturn() throws {
-        let returned = dispatcher.handle(
-            JSInvocation(
-                method: MethodForJS(
+        let returned = dispatcher.dispatch(
+            IncomingInvocation(
+                method: Method(
                     namespace: exampleNamespace, name: "f3"
                 ),
-                signature: JSInvocation.Signature(parameter: "string value", callback: nil)
-            ),
-            callback: nil
+                signature: IncomingInvocation.Signature(parameter: "string value", callbackFunctionName: nil)
+            )
         )
-        XCTAssert(returned.data as! String == ExampleInterfaceForJS.f3ReturnValue)
+        XCTAssert(returned.data as! String == ExampleExposedInterface.f3ReturnValue)
     }
     
     func testInvokingCompletion() throws {
-        _ = dispatcher.handle(
-            JSInvocation(
-                method: MethodForJS(
+        let returned = dispatcher.dispatch(
+            IncomingInvocation(
+                method: Method(
                     namespace: exampleNamespace, name: "f4"
                 ),
-                signature: JSInvocation.Signature(parameter: "string value", callback: nil)
+                signature: IncomingInvocation.Signature(
+                    parameter: "string value",
+                    callbackFunctionName: "funcInJS"
+                )
             )
-        ) { value, completed in
-            XCTAssert((value.data as! String, completed) == ExampleInterfaceForJS.f4ReturnValue)
-        }
+        )
+        XCTAssert(returned.code == Response.empty.code)
+        XCTAssert(returned.data as! String == "")
+        XCTAssert(asyncResponse.functionName == "funcInJS")
+        XCTAssert(asyncResponse.data as! String == ExampleExposedInterface.f4ReturnValue.0)
+        XCTAssert(asyncResponse.completed == ExampleExposedInterface.f4ReturnValue.1)
     }
     
     func testInvokingParameterCompletion() throws {
-        _ = dispatcher.handle(
-            JSInvocation(
-                method: MethodForJS(
+        let returned = dispatcher.dispatch(
+            IncomingInvocation(
+                method: Method(
                     namespace: exampleNamespace, name: "f5"
                 ),
-                signature: JSInvocation.Signature(parameter: "string value", callback: nil)
+                signature: IncomingInvocation.Signature(
+                    parameter: true,
+                    callbackFunctionName: "funcInJSF5"
+                )
             )
-        ) { value, completed in
-            XCTAssert((value.data as! Int, completed) == ExampleInterfaceForJS.f5ReturnValue)
-        }
+        )
+        XCTAssert(exampleInterface.f5PassedInParameter == true)
+        XCTAssert(returned.code == Response.empty.code)
+        XCTAssert(returned.data as! String == "")
+        XCTAssertEqual(asyncResponse.functionName, "funcInJSF5")
+        XCTAssert(
+            (asyncResponse.data as! Int, asyncResponse.completed)
+                == ExampleExposedInterface.f5ReturnValue
+        )
     }
 }

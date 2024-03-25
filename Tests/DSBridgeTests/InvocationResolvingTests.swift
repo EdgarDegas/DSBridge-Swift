@@ -15,12 +15,12 @@ final class InvocationResolvingTests: XCTestCase {
     func testGettingMethod() throws {
         XCTAssert(
             try methodResolver.resolveMethodFromRaw("a.b") ==
-                MethodForJS(namespace: "a", name: "b")
+                Method(namespace: "a", name: "b")
         )
         
         XCTAssert(
-            try methodResolver.resolveMethodFromRaw("a.b") ==
-                MethodForJS(namespace: "a", name: "b")
+            try methodResolver.resolveMethodFromRaw("a.b.c") ==
+                Method(namespace: "a.b", name: "c")
         )
     }
     
@@ -33,7 +33,7 @@ final class InvocationResolvingTests: XCTestCase {
             }
             """
             let resolved = try! jsonSerializer.readParamters(from: jsonString)
-            return resolved.callback == "callback" && (resolved.parameter as! Double) == 1.1
+            return resolved.callbackFunctionName == "callback" && (resolved.parameter as! Double) == 1.1
         }())
         
         XCTAssert({
@@ -150,31 +150,6 @@ final class InvocationResolvingTests: XCTestCase {
         }
         XCTAssertThrowsError(
             try methodResolver.resolveMethodFromRaw("a.")
-        ) {
-            XCTAssert($0 is DSBridge.Error.NameResolvingError)
-        }
-        XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("a.b.c")
-        ) {
-            XCTAssert($0 is DSBridge.Error.NameResolvingError)
-        }
-        XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("")
-        ) {
-            XCTAssert($0 is DSBridge.Error.NameResolvingError)
-        }
-        XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw(".b")
-        ) {
-            XCTAssert($0 is DSBridge.Error.NameResolvingError)
-        }
-        XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("a.")
-        ) {
-            XCTAssert($0 is DSBridge.Error.NameResolvingError)
-        }
-        XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("a.b.c")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }

@@ -31,10 +31,10 @@ import ObjectiveC
  }
  */
 
-public enum PredefinedJSInvocation {
+public enum PredefinedInvocation {
     case hasMethod(String)
     case close
-    case callback(Callback)
+    case handleResponseFromJS(FromJS.Response)
     case initialize
 }
 
@@ -43,12 +43,12 @@ public enum PredefinedJSInvocation {
 /// Make sure the namespace and function names & signature always match with 
 /// the definitions in JavaScript.
 @Exposed
-public final class PredefinedInterfaceForJS {
+public final class PredefinedInterface {
     static var namespace: String {
         "_dsb"
     }
     
-    public typealias Handler = (PredefinedJSInvocation) -> Any
+    public typealias Handler = (PredefinedInvocation) -> Any
     
     private let predefinedInvocationHandler: Handler
     
@@ -64,8 +64,8 @@ public final class PredefinedInterfaceForJS {
         else {
             return
         }
-        let callback = Callback(id: id, data: data, completed: completed)
-        _ = predefinedInvocationHandler(.callback(callback))
+        let response = FromJS.Response(id: id, data: data, completed: completed)
+        _ = predefinedInvocationHandler(.handleResponseFromJS(response))
     }
     
     func dsinit() {

@@ -7,7 +7,7 @@
 
 import Foundation
 
-@attached(extension, conformances: InterfaceForJS)
+@attached(extension, conformances: ExposedInterface)
 @attached(member, names: arbitrary)
 public macro Exposed() = #externalMacro(module: "DSBridgeMacros", type: "Exposed")
 

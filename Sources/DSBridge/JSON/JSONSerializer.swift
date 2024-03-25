@@ -20,10 +20,10 @@ public final class JSONSerializer: JSONSerializing {
     
     public func readParamters(
         from text: JSON?
-    ) throws -> JSInvocation.Signature {
+    ) throws -> IncomingInvocation.Signature {
         guard let text else {
-            // calling a method with no parameter nor callback
-            return JSInvocation.Signature()
+            // A call with no parameter nor callback
+            return IncomingInvocation.Signature()
         }
         guard let rawData = text.data(using: .utf8) else {
             throw Error.JSON.ReadingError
@@ -41,11 +41,11 @@ public final class JSONSerializer: JSONSerializing {
                 return raw
             }
         }()
-        return JSInvocation.Signature(
+        return IncomingInvocation.Signature(
             parameter: parameter,
-            callback: {
-                if let callback = dict[Self.callbackKey] as? String {
-                    return callback
+            callbackFunctionName: {
+                if let functionName = dict[Self.callbackKey] as? String {
+                    return functionName
                 } else {
                     return nil
                 }

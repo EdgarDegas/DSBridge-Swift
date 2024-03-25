@@ -7,8 +7,8 @@
 
 import Foundation
 
-public struct JSInvocation {
-    public var method: MethodForJS
+public struct IncomingInvocation {
+    public var method: Method
     public var signature: Signature
     public var isSynchronous: Bool {
         signature.indicatesSynchronousCall
@@ -16,10 +16,10 @@ public struct JSInvocation {
     
     public struct Signature {
         public var parameter: Any?
-        public var callback: String?
+        public var callbackFunctionName: String?
         
         public var indicatesSynchronousCall: Bool {
-            callback == nil
+            callbackFunctionName == nil
         }
     }
 }

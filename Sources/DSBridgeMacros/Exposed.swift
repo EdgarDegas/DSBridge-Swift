@@ -17,7 +17,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
         [try! ExtensionDeclSyntax(
-            "extension \(type): InterfaceForJS { }"
+            "extension \(type): ExposedInterface { }"
         )]
     }
     
@@ -32,9 +32,34 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         let synchronousCases = Self.casesForSynchronousFunctions(
             functions.filter(\.isSynchronous)
         )
+        let synchronousHandlingBody = if synchronousCases.isEmpty {
+            ""
+        } else {
+            """
+            let function = exposed[methodName]
+            switch methodName {
+            \(synchronousCases.joined(separator: "\n"))
+            default:
+                return nil
+            }
+            return nil
+            """
+        }
         let asynchronousCases = Self.casesForAsynchronousFunctions(
             functions.filter(\.isAsynchronous)
         )
+        let asynchronousHandlingBody = if asynchronousCases.isEmpty {
+            ""
+        } else {
+            """
+            let function = exposed[methodName]
+            switch methodName {
+            \(asynchronousCases.joined(separator: "\n"))
+            default:
+                break
+            }
+            """
+        }
         return [
             """
             var exposed: [String: Any] {[
@@ -46,11 +71,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
                 calling methodName: String,
                 with parameter: Any?
             ) -> Any? {
-                switch methodName {
-                \(raw: synchronousCases.joined(separator: "\n"))
-                default:
-                    return nil
-                }
+                \(raw: synchronousHandlingBody)
             }
             """,
             """
@@ -59,11 +80,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
                 with parameter: Any?,
                 completion: @escaping (Any?, Bool) -> Void
             ) {
-                switch methodName {
-                \(raw: asynchronousCases.joined(separator: "\n"))
-                default:
-                    break
-                }
+                \(raw: asynchronousHandlingBody)
             }
             """,
             """
@@ -101,12 +118,11 @@ public struct Exposed: MemberMacro, ExtensionMacro {
     }
     
     static func guardConvertingFunction(
-        _ name: String,
         to type: String,
         else: String
     ) -> String {
         `guard`(
-            "let function = exposed[\(quoted(name))] as? \(type)",
+            "let function = function as? \(type)",
             else: `else`
         )
     }
@@ -174,7 +190,8 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             let hasParameter = 
                 !function.signature.parameterClause.parameters.isEmpty
             let calling = callingClause(
-                hasParameter: hasParameter
+                hasParameter: hasParameter,
+                shouldReturn: function.returns
             )
             return caseStatements(
                 caseClause(name),
@@ -184,11 +201,19 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             )
         }
         
-        func callingClause(hasParameter: Bool) -> String {
-            if hasParameter {
-                "return function(parameter)"
+        func callingClause(
+            hasParameter: Bool,
+            shouldReturn: Bool
+        ) -> String {
+            let returnClause = if shouldReturn {
+                "return "
             } else {
-                "return function()"
+                ""
+            }
+            if hasParameter {
+                return "\(returnClause)function(parameter)"
+            } else {
+                return "\(returnClause)function()"
             }
         }
     }
@@ -218,7 +243,6 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             returnType: returnType
         )
         let functionConvertion = guardConvertingFunction(
-            function.name.text,
             to: closureTypeClause,
             else: "return nil"
         )
@@ -245,7 +269,6 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             returnType: "Void"
         )
         let functionConvertion = guardConvertingFunction(
-            function.name.text,
             to: closureTypeClause,
             else: "return"
         )

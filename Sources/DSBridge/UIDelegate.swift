@@ -9,29 +9,19 @@ import WebKit
 
 open class UIDelegate: NSObject, WKUIDelegate {
     open weak var designatedDelegate: (any WKUIDelegate)?
-    
-    open var invocationHandler: any JSInvocationDispatching
     open var jsonSerializer: any JSONSerializing
-    
     open var logger: any ErrorLogging = ErrorLogger.shared
     open var methodResolver: any MethodResolving
-    
-    open var evaluateJavaScript: (String) -> Void
-    
-    open class var defaultResponse: String {
-        #"{"data":"","code":-1}"#
-    }
+    open var invocationHandler: (IncomingInvocation) -> JSON
     
     init(
         jsonSerializer: any JSONSerializing,
-        invocationHandler: any JSInvocationDispatching,
         methodResolver: any MethodResolving,
-        evaluationHandler: @escaping (String) -> Void
+        invocationHandler: @escaping (IncomingInvocation) -> JSON
     ) {
         self.jsonSerializer = jsonSerializer
         self.invocationHandler = invocationHandler
         self.methodResolver = methodResolver
-        self.evaluateJavaScript = evaluationHandler
     }
     
     open func webView(
@@ -69,84 +59,12 @@ open class UIDelegate: NSObject, WKUIDelegate {
                 from: prompt,
                 synchronous: signature.indicatesSynchronousCall
             )
-            let invocation = JSInvocation(method: method, signature: signature)
-            let returned = invocationHandler.handle(
-                invocation
-            ) { [weak self] parameters, completed in
-                self?.performCallback(
-                    of: invocation, with: parameters.data, completed: completed
-                )
-            }
-            complete(with: returned, completion: completion)
+            let invocation = IncomingInvocation(method: method, signature: signature)
+            let response = invocationHandler(invocation)
+            completion(response)
         } catch {
             logger.logError(error)
-            completion(Self.defaultResponse)
-        }
-    }
-    
-    open func complete(
-        with returned: Response,
-        completion: @escaping (String?) -> Void
-    ) {
-        do {
-            let serialized = try jsonSerializer.serialize(
-                returned.asDictionary
-            )
-            completion(serialized)
-        } catch {
-            logger.logError(error)
-        }
-    }
-    
-    open func performCallback(
-        of invocation: JSInvocation,
-        with data: Any,
-        completed: Bool
-    ) {
-        guard let callback = invocation.signature.callback else {
-            let message = "Method marked non-synchronous has no callback."
-            assertionFailure(message)
-            logger.logMessage(message, at: .error, into: nil)
-            return
-        }
-        do {
-            let encoded = try jsonSerializer.serialize(data)
-            let deletingScript = writeDeletingScript(for: callback, if: completed)
-            evaluateJavaScript(
-                writeScriptCallingBack(
-                    to: callback,
-                    encodedData: encoded,
-                    deletingScript: deletingScript
-                )
-            )
-        } catch {
-            logger.logError(error)
-        }
-        
-        func writeScriptCallingBack(
-            to callback: String,
-            encodedData: String,
-            deletingScript: String
-        ) -> String {
-            """
-            try {
-                \(callback)(JSON.parse(decodeURIComponent(\(encodedData))));
-                \(deletingScript);
-            } catch(e) {
-            
-            }
-            """
-        }
-        
-        func writeDeletingScript(
-            for callback: String,
-            if completed: Bool
-        ) -> String {
-            if completed {
-                "delete window.\(callback)"
-            } else {
-                ""
-            }
+            completion(Response.emptyJSON)
         }
     }
     
@@ -168,14 +86,14 @@ open class UIDelegate: NSObject, WKUIDelegate {
     
     open func getSignature(
         from defaultText: String?
-    ) throws -> JSInvocation.Signature {
+    ) throws -> IncomingInvocation.Signature {
         try jsonSerializer.readParamters(from: defaultText)
     }
     
     open func getMethod(
         from prompt: String,
         synchronous: Bool
-    ) throws -> MethodForJS {
+    ) throws -> Method {
         let raw = String(prompt.dropFirst(Self.prefix.count))
         return try methodResolver.resolveMethodFromRaw(raw)
     }

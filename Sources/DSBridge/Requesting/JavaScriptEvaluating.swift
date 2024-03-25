@@ -16,7 +16,7 @@ public protocol JavaScriptEvaluating: AnyObject {
         with parameter: JSON,
         completion: Completion?
     )
-    func handleCallback(_ callback: Callback)
+    func handleResponse(_ response: FromJS.Response)
     func initialize()
 }
 
@@ -65,20 +65,20 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
         }
     }
     
-    public func handleCallback(_ callback: Callback) {
+    public func handleResponse(_ response: FromJS.Response) {
         serialQueue.async { [weak self] in
             guard 
                 let self,
-                let completion = completionByID[callback.id]
+                let completion = completionByID[response.id]
             else {
                 return
             }
             defer {
-                if callback.completed {
-                    completionByID.removeValue(forKey: callback.id)
+                if response.completed {
+                    completionByID.removeValue(forKey: response.id)
                 }
             }
-            completion(callback.data)
+            completion(response.data)
         }
     }
     

@@ -10,7 +10,7 @@ import Foundation
 public protocol JSONSerializing {
     func readParamters(
         from text: JSON?
-    ) throws -> JSInvocation.Signature
+    ) throws -> IncomingInvocation.Signature
     
     func serialize(
         _ object: Any

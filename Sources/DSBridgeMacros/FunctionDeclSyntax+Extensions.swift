@@ -8,13 +8,17 @@
 import SwiftSyntax
 
 extension FunctionDeclSyntax {
+    var returns: Bool {
+        signature.returnClause != nil
+    }
+    
     var isSynchronous: Bool {
         !isAsynchronous
     }
     
     var isAsynchronous: Bool {
         guard
-            signature.returnClause == nil,
+            !returns,
             let lastParameter = signature.parameterClause.parameters.last
         else {
             return false
