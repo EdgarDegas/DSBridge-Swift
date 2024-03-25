@@ -14,13 +14,13 @@ final class InvocationResolvingTests: XCTestCase {
     
     func testGettingMethod() throws {
         XCTAssert(
-            try methodResolver.resolveMethodFromRaw("a.b", synchronous: true) ==
-                MethodForJS(isSynchronous: true, namespace: "a", name: "b")
+            try methodResolver.resolveMethodFromRaw("a.b") ==
+                MethodForJS(namespace: "a", name: "b")
         )
         
         XCTAssert(
-            try methodResolver.resolveMethodFromRaw("a.b", synchronous: false) ==
-                MethodForJS(isSynchronous: false, namespace: "a", name: "b")
+            try methodResolver.resolveMethodFromRaw("a.b") ==
+                MethodForJS(namespace: "a", name: "b")
         )
     }
     
@@ -139,42 +139,42 @@ final class InvocationResolvingTests: XCTestCase {
     
     func testGettingMethodFromInvalidPrompt() throws {
         XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("", synchronous: true)
+            try methodResolver.resolveMethodFromRaw("")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }
         XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw(".b", synchronous: true)
+            try methodResolver.resolveMethodFromRaw(".b")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }
         XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("a.", synchronous: true)
+            try methodResolver.resolveMethodFromRaw("a.")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }
         XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("a.b.c", synchronous: true)
+            try methodResolver.resolveMethodFromRaw("a.b.c")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }
         XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("", synchronous: false)
+            try methodResolver.resolveMethodFromRaw("")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }
         XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw(".b", synchronous: false)
+            try methodResolver.resolveMethodFromRaw(".b")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }
         XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("a.", synchronous: false)
+            try methodResolver.resolveMethodFromRaw("a.")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }
         XCTAssertThrowsError(
-            try methodResolver.resolveMethodFromRaw("a.b.c", synchronous: false)
+            try methodResolver.resolveMethodFromRaw("a.b.c")
         ) {
             XCTAssert($0 is DSBridge.Error.NameResolvingError)
         }

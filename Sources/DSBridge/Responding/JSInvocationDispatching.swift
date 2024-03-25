@@ -7,16 +7,18 @@
 
 import Foundation
 
-public protocol JSInvocationHandling {
+public protocol JSInvocationDispatching {
     func handle(
         _ invocation: JSInvocation,
         callback: ((Response, Bool) -> Void)?
     ) -> Response
     
     func addInterface(_ interface: InterfaceForJS, by namespace: String)
+    
+    func hasMethod(_ method: MethodForJS) -> Bool
 }
 
-open class JSInvocationHandler: JSInvocationHandling {
+open class JSInvocationDispatcher: JSInvocationDispatching {
     open var interfaces: [String: any InterfaceForJS] = [:]
     open var logger: any ErrorLogging = ErrorLogger.shared
     
@@ -30,24 +32,19 @@ open class JSInvocationHandler: JSInvocationHandling {
         interfaces[namespace] = interface
     }
     
+    open func hasMethod(_ method: MethodForJS) -> Bool {
+        getInterface(for: method) != nil
+    }
+    
     open func handle(
         _ invocation: JSInvocation,
         callback: ((Response, Bool) -> Void)?
     ) -> Response {
         let method = invocation.method
-        guard let interface = interfaces[method.namespace] else {
-            logger.logError(
-                Error.NameResolvingError.namespaceNotFound(method.namespace)
-            )
+        guard let interface = getInterface(for: method) else {
             return .empty
         }
-        guard interface.hasMethod(named: method.name) else {
-            logger.logError(
-                Error.NameResolvingError.methodNotFound(method.fullname)
-            )
-            return .empty
-        }
-        if method.isSynchronous {
+        if invocation.isSynchronous {
             let data = interface.handle(
                 calling: method.name,
                 with: invocation.signature.parameter
@@ -65,5 +62,21 @@ open class JSInvocationHandler: JSInvocationHandling {
             }
             return .empty
         }
+    }
+    
+    private func getInterface(for method: MethodForJS) -> InterfaceForJS? {
+        guard let interface = interfaces[method.namespace] else {
+            logger.logError(
+                Error.NameResolvingError.namespaceNotFound(method.namespace)
+            )
+            return nil
+        }
+        guard interface.hasMethod(named: method.name) else {
+            logger.logError(
+                Error.NameResolvingError.methodNotFound(method.fullname)
+            )
+            return nil
+        }
+        return interface
     }
 }

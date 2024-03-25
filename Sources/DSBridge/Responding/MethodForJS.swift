@@ -8,7 +8,6 @@
 import Foundation
 
 public struct MethodForJS: Equatable {
-    public var isSynchronous: Bool
     public var namespace: String
     public var name: String
     
@@ -20,15 +19,15 @@ public struct MethodForJS: Equatable {
 
 public protocol MethodResolving {
     func resolveMethodFromRaw(
-        _ raw: String,
-        synchronous: Bool
+        _ raw: String
     ) throws -> MethodForJS
 }
 
 public struct MethodResolver: MethodResolving {
+    public init() { }
+    
     public func resolveMethodFromRaw(
-        _ raw: String,
-        synchronous: Bool
+        _ raw: String
     ) throws -> MethodForJS {
         let substrings = raw.split(
             separator: ".",
@@ -52,13 +51,11 @@ public struct MethodResolver: MethodResolving {
         }()
         if strings.count == 1 {
             return MethodForJS(
-                isSynchronous: synchronous,
                 namespace: "",
                 name: strings[0]
             )
         } else {
             return MethodForJS(
-                isSynchronous: synchronous,
                 namespace: strings[0],
                 name: strings[1]
             )

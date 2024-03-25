@@ -11,6 +11,7 @@ import os
 public protocol ErrorLogging {
     func logError(_ error: any Swift.Error)
     func logError(_ error: any Swift.Error, into category: String?)
+    func logMessage(_ message: String, at level: OSLogType)
     func logMessage(_ message: String, at level: OSLogType, into category: String?)
 }
 
@@ -34,6 +35,10 @@ public final class ErrorLogger: ErrorLogging {
     
     public func logError(_ error: any Swift.Error, into category: String?) {
         logMessage("\(error)", at: .error, into: category)
+    }
+    
+    public func logMessage(_ message: String, at level: OSLogType) {
+        logMessage(message, at: level, into: nil)
     }
     
     public func logMessage(_ message: String, at level: OSLogType, into category: String?) {

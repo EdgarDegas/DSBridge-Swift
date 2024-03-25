@@ -19,13 +19,16 @@ open class WebView: WKWebView {
         }
     }
     
-    private let jsonSerializer: any JSONSerializing
-    private let jsInvocationHandler: any JSInvocationHandling
+    open var dismissalHandler: (() -> Void)?
     
-    private lazy var internalInterfaceForJS = 
-        InternalInterfaceForJS
-    { [weak javaScriptEvaluator] callback in
-        javaScriptEvaluator?.handleCallback(callback)
+    private let jsonSerializer: any JSONSerializing
+    private let jsInvocationDispatcher: any JSInvocationDispatching
+    private let methodResolver: any MethodResolving
+    
+    private lazy var predefinedInterfaceForJS = 
+        PredefinedInterfaceForJS
+    { [weak self] invocation in
+        self?.handlePredefinedInvocation(invocation) ?? Void()
     }
     
     open lazy var javaScriptEvaluator: any JavaScriptEvaluating =
@@ -35,7 +38,8 @@ open class WebView: WKWebView {
     
     open lazy var innerUIDelegate = UIDelegate(
         jsonSerializer: jsonSerializer,
-        invocationHandler: jsInvocationHandler,
+        invocationHandler: jsInvocationDispatcher,
+        methodResolver: methodResolver,
         evaluationHandler: { [weak self] in
             guard let self else { return }
             javaScriptEvaluator.evaluate($0)
@@ -50,25 +54,28 @@ open class WebView: WKWebView {
     
     public init(
         configuration: WKWebViewConfiguration = WKWebViewConfiguration(),
-        jsInvocationHandler: JSInvocationHandler = JSInvocationHandler(),
-        jsonSerializer: any JSONSerializing = JSONSerializer()
+        jsInvocationHandler: JSInvocationDispatching = JSInvocationDispatcher(),
+        jsonSerializer: any JSONSerializing = JSONSerializer(),
+        methodResolver: any MethodResolving = MethodResolver()
     ) {
-        self.jsInvocationHandler = jsInvocationHandler
+        self.jsInvocationDispatcher = jsInvocationHandler
         self.jsonSerializer = jsonSerializer
+        self.methodResolver = methodResolver
         super.init(frame: .zero, configuration: configuration)
         jsInvocationHandler.addInterface(
-            internalInterfaceForJS,
-            by: InternalInterfaceForJS.namespace
+            predefinedInterfaceForJS,
+            by: PredefinedInterfaceForJS.namespace
         )
     }
     
     required public init?(coder: NSCoder) {
-        jsInvocationHandler = JSInvocationHandler()
+        jsInvocationDispatcher = JSInvocationDispatcher()
         jsonSerializer = JSONSerializer()
+        methodResolver = MethodResolver()
         super.init(coder: coder)
-        jsInvocationHandler.addInterface(
-            internalInterfaceForJS,
-            by: InternalInterfaceForJS.namespace
+        jsInvocationDispatcher.addInterface(
+            predefinedInterfaceForJS,
+            by: PredefinedInterfaceForJS.namespace
         )
     }
     
@@ -95,14 +102,6 @@ open class WebView: WKWebView {
             
         }
     }
-    
-    /// set a listener for JavaScript closing the current page.
-    open func setJavaScriptCloseWindowListener(
-        _ callback: (() -> Void)?
-    ) {
-        
-    }
-    
     
     ///Add a JavaScript Object to dsBridge with namespace.
     ///- Parameters:
@@ -143,8 +142,31 @@ open class WebView: WKWebView {
         
     }
     
-    /// private method, the developer shoudn't call this method
-    func onMessage(_ msg: [AnyHashable: Any],  type: Int) {
-        
+    func handlePredefinedInvocation(
+        _ predefinedInvocation: PredefinedJSInvocation
+    ) -> Any {
+        switch predefinedInvocation {
+        case .callback(let callback):
+            javaScriptEvaluator.handleCallback(callback)
+        case .initialize:
+            javaScriptEvaluator.initialize()
+        case .close:
+            dismissalHandler?()
+        case .hasMethod(let rawMethod):
+            do {
+                let method = try methodResolver.resolveMethodFromRaw(
+                    rawMethod
+                )
+                let result = jsInvocationDispatcher.hasMethod(method)
+                return result
+            } catch {
+                logger.logMessage(
+                    "Failed to resolve method from text: \(rawMethod).",
+                    at: .debug
+                )
+                return false
+            }
+        }
+        return Void()
     }
 }

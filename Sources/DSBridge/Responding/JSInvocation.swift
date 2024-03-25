@@ -10,6 +10,9 @@ import Foundation
 public struct JSInvocation {
     public var method: MethodForJS
     public var signature: Signature
+    public var isSynchronous: Bool {
+        signature.indicatesSynchronousCall
+    }
     
     public struct Signature {
         public var parameter: Any?

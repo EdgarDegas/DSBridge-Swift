@@ -31,7 +31,7 @@ public struct Exposed: MemberMacro {
                 }
             }
             .map {
-                "\"\($0.name)\": (\($0.name))"
+                "\"\($0.name)\": \($0.name)"
             }
         let dict = if names.isEmpty {
             ""
@@ -49,12 +49,17 @@ public struct Exposed: MemberMacro {
                 calling methodName: String,
                 with parameter: Any?
             ) -> Any? {
-                guard let function = exposed[methodName] as?
-                    (Any?) -> Any?
-                else {
-                    return nil
+                let function = exposed[methodName]
+                if let function = function as? (Any?) -> Any? {
+                    return function(parameter)
+                } else if let function = function as? () -> Any? {
+                    return function()
+                } else if let function = function as? () -> Void {
+                    function()
+                } else if let function = function as? (Any?) -> Void {
+                    function(parameter)
                 }
-                return function(parameter)
+                return nil
             }
             """,
             """
@@ -63,12 +68,12 @@ public struct Exposed: MemberMacro {
                 with parameter: Any?,
                 completion: @escaping (Any?, Bool) -> Void
             ) {
-                guard let function = exposed[methodName] as?
-                    (Any?, Any) -> Void
-                else {
-                    return
+                let function = exposed[methodName]
+                if let function = function as? (Any?, Any) -> Void {
+                    function(parameter, completion)
+                } else if let function = function as? (Any) -> Void {
+                    function(completion)
                 }
-                function(parameter, completion)
             }
             """,
             """

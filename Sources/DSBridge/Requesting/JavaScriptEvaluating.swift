@@ -17,6 +17,7 @@ public protocol JavaScriptEvaluating: AnyObject {
         completion: Completion?
     )
     func handleCallback(_ callback: Callback)
+    func initialize()
 }
 
 public typealias JavaScript = String
@@ -25,6 +26,8 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
     private let perfromEvaluation: (JavaScript) -> Void
     private var incrementalID: Int = 0
     private var completionByID: [Int: Completion] = [:]
+    private var waitingScripts: [String] = []
+    private var initialized = false
     
     private let serialQueue = DispatchQueue(
         label: "JavaScriptEvaluator"
@@ -36,6 +39,14 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
     
     public func evaluate(_ javaScript: JavaScript) {
         perfromEvaluation(javaScript)
+    }
+    
+    public func initialize() {
+        serialQueue.async { [weak self] in
+            guard let self else { return }
+            initialized = true
+            evaluateWaitingScripts()
+        }
     }
     
     public func call(
@@ -71,6 +82,13 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
         }
     }
     
+    private func evaluateWaitingScripts() {
+        defer { waitingScripts = [] }
+        for script in waitingScripts {
+            evaluate(script)
+        }
+    }
+    
     private func call(
         _ functionName: String,
         with parameter: JSON,
@@ -84,6 +102,10 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
         }
         """
         let script = "window._handleMessageFromNative(\(message))"
+        guard initialized else {
+            waitingScripts.append(script)
+            return
+        }
         evaluate(script)
     }
 }

@@ -10,14 +10,13 @@ import WebKit
 open class UIDelegate: NSObject, WKUIDelegate {
     open weak var designatedDelegate: (any WKUIDelegate)?
     
-    open var invocationHandler: any JSInvocationHandling
+    open var invocationHandler: any JSInvocationDispatching
     open var jsonSerializer: any JSONSerializing
     
     open var logger: any ErrorLogging = ErrorLogger.shared
-    open var methodResolver:
-        any MethodResolving = MethodResolver()
+    open var methodResolver: any MethodResolving
     
-    open var evaluationHandler: (String) -> Void
+    open var evaluateJavaScript: (String) -> Void
     
     open class var defaultResponse: String {
         #"{"data":"","code":-1}"#
@@ -25,12 +24,14 @@ open class UIDelegate: NSObject, WKUIDelegate {
     
     init(
         jsonSerializer: any JSONSerializing,
-        invocationHandler: any JSInvocationHandling,
+        invocationHandler: any JSInvocationDispatching,
+        methodResolver: any MethodResolving,
         evaluationHandler: @escaping (String) -> Void
     ) {
         self.jsonSerializer = jsonSerializer
         self.invocationHandler = invocationHandler
-        self.evaluationHandler = evaluationHandler
+        self.methodResolver = methodResolver
+        self.evaluateJavaScript = evaluationHandler
     }
     
     open func webView(
@@ -111,9 +112,9 @@ open class UIDelegate: NSObject, WKUIDelegate {
         do {
             let encoded = try jsonSerializer.serialize(data)
             let deletingScript = writeDeletingScript(for: callback, if: completed)
-            evaluationHandler(
+            evaluateJavaScript(
                 writeScriptCallingBack(
-                    callback,
+                    to: callback,
                     encodedData: encoded,
                     deletingScript: deletingScript
                 )
@@ -123,7 +124,7 @@ open class UIDelegate: NSObject, WKUIDelegate {
         }
         
         func writeScriptCallingBack(
-            _ callback: String,
+            to callback: String,
             encodedData: String,
             deletingScript: String
         ) -> String {
@@ -176,9 +177,7 @@ open class UIDelegate: NSObject, WKUIDelegate {
         synchronous: Bool
     ) throws -> MethodForJS {
         let raw = String(prompt.dropFirst(Self.prefix.count))
-        return try methodResolver.resolveMethodFromRaw(
-            raw, synchronous: synchronous
-        )
+        return try methodResolver.resolveMethodFromRaw(raw)
     }
     
     open override func responds(to aSelector: Selector!) -> Bool {
