@@ -103,7 +103,10 @@ open class Keystone: KeystoneProtocol {
     }
     
     open func hasJavaScriptMethod(named name: String, completion: @escaping (Bool) -> Void) {
-        // TODO: call JS
+        call("_hasJavascriptMethod", with: name) {
+            let has: Bool? = try? $0.get()
+            completion(has ?? false)
+        }
     }
     
     func handleIncomingInvocation(
