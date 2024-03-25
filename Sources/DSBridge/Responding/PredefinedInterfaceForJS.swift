@@ -43,7 +43,7 @@ public enum PredefinedJSInvocation {
 /// Make sure the namespace and function names & signature always match with 
 /// the definitions in JavaScript.
 @Exposed
-public final class PredefinedInterfaceForJS: InterfaceForJS {    
+public final class PredefinedInterfaceForJS {
     static var namespace: String {
         "_dsb"
     }

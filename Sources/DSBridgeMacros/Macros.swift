@@ -12,7 +12,7 @@ import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 @main
-struct MacroImplementations: CompilerPlugin {
+struct Macros: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         Exposed.self,
         Unexposed.self

@@ -13,6 +13,18 @@ public struct Unexposed: PeerMacro {
         "unexposed"
     }
     
+    static func declarationMarkedUnexposed(
+        _ declaration: FunctionDeclSyntax
+    ) -> Bool {
+        declaration.attributes.contains { attribute in
+            attribute.as(AttributeSyntax.self)?.attributeName
+                .as(IdentifierTypeSyntax.self)?
+                .name
+                .text
+            == Unexposed.attributeName
+        }
+    }
+    
     public static func expansion(
         of node: SwiftSyntax.AttributeSyntax,
         providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,
