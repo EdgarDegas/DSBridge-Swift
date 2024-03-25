@@ -22,26 +22,31 @@ public protocol JavaScriptEvaluating: AnyObject {
 
 public typealias JavaScript = String
 
-public final class JavaScriptEvaluator: JavaScriptEvaluating {
-    private let perfromEvaluation: (JavaScript) -> Void
+open class JavaScriptEvaluator: JavaScriptEvaluating {
+    private let evaluating: (JavaScript) -> Void
     private var incrementalID: Int = 0
     private var completionByID: [Int: Completion] = [:]
     private var waitingScripts: [String] = []
     private var initialized = false
     
+    /// Serial queue to access properties and evaluate scripts.
     private let serialQueue = DispatchQueue(
-        label: "JavaScriptEvaluator"
+        label: "JavaScriptEvaluator",
+        target: .main
     )
     
     public init(evaluating: @escaping (JavaScript) -> Void) {
-        self.perfromEvaluation = evaluating
+        self.evaluating = evaluating
     }
     
-    public func evaluate(_ javaScript: JavaScript) {
-        perfromEvaluation(javaScript)
+    open func evaluate(_ javaScript: JavaScript) {
+        serialQueue.async { [weak self] in
+            guard let self else { return }
+            performEvaluation(javaScript)
+        }
     }
     
-    public func initialize() {
+    open func initialize() {
         serialQueue.async { [weak self] in
             guard let self else { return }
             initialized = true
@@ -49,7 +54,7 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
         }
     }
     
-    public func call(
+    open func call(
         _ functionName: String,
         with parameter: JSON,
         completion: Completion?
@@ -65,7 +70,7 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
         }
     }
     
-    public func handleResponse(_ response: FromJS.Response) {
+    open func handleResponse(_ response: FromJS.Response) {
         serialQueue.async { [weak self] in
             guard 
                 let self,
@@ -82,10 +87,19 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
         }
     }
     
+    private func performEvaluation(_ script: String) {
+        guard initialized else {
+            waitingScripts.append(script)
+            return
+        }
+        evaluating(script)
+    }
+    
     private func evaluateWaitingScripts() {
-        defer { waitingScripts = [] }
-        for script in waitingScripts {
-            evaluate(script)
+        let scripts = waitingScripts
+        waitingScripts = []
+        for script in scripts {
+            performEvaluation(script)
         }
     }
     
@@ -102,10 +116,6 @@ public final class JavaScriptEvaluator: JavaScriptEvaluating {
         }
         """
         let script = "window._handleMessageFromNative(\(message))"
-        guard initialized else {
-            waitingScripts.append(script)
-            return
-        }
-        evaluate(script)
+        performEvaluation(script)
     }
 }

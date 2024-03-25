@@ -37,6 +37,26 @@ open class WebView: WKWebView {
             ?? Response.emptyJSON
     }
     
+    public override init(frame: CGRect, configuration: WKWebViewConfiguration) {
+        super.init(frame: frame, configuration: configuration)
+        setEnvironmentVariable()
+    }
+    
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setEnvironmentVariable()
+    }
+    
+    func setEnvironmentVariable() {
+        configuration.userContentController.addUserScript(
+            WKUserScript(
+                source: "window._dswk=true;",
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+        )
+    }
+    
     /// Call JavaScript handler.
     open func call<T>(
         _ methodName: String,
