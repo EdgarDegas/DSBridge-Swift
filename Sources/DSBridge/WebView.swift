@@ -48,6 +48,7 @@ open class WebView: WKWebView {
     }
     
     func setEnvironmentVariable() {
+        super.uiDelegate = innerUIDelegate
         configuration.userContentController.addUserScript(
             WKUserScript(
                 source: "window._dswk=true;",

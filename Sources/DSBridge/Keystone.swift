@@ -114,7 +114,7 @@ open class Keystone: KeystoneProtocol {
     ) -> JSON? {
         let response = invocationDispatcher.dispatch(invocation)
         do {
-            let json = try jsonSerializer.serialize(response)
+            let json = try jsonSerializer.serialize(response.asDictionary)
             return json
         } catch {
             logger.logError(error)

@@ -47,7 +47,13 @@ open class UIDelegate: NSObject, WKUIDelegate {
         defaultText: String?, initiatedByFrame frame: WKFrameInfo,
         completionHandler: @escaping (String?) -> Void
     ) {
-        guard let designatedDelegate else { return }
+        guard
+            let designatedDelegate,
+            designatedDelegate.responds(to: Self.injectedSelector)
+        else {
+            completionHandler(nil)
+            return
+        }
         designatedDelegate.webView?(
             webView,
             runJavaScriptTextInputPanelWithPrompt: prompt,

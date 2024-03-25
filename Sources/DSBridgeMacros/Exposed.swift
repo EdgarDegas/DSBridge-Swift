@@ -33,14 +33,14 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             functions.filter(\.isSynchronous)
         )
         let synchronousHandlingBody = if synchronousCases.isEmpty {
-            ""
+            "return nil"
         } else {
             """
             let function = exposed[methodName]
             switch methodName {
             \(synchronousCases.joined(separator: "\n"))
             default:
-                return nil
+                break
             }
             return nil
             """
@@ -111,7 +111,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             "\"\($0.name)\": \($0.name)"
         }
         return if keyValues.isEmpty {
-            ""
+            ":"
         } else {
             keyValues.joined(separator: ",\n")
         }
