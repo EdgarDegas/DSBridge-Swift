@@ -8,6 +8,8 @@
 import Foundation
 import os
 
+public var sharedLogger: any ErrorLogging = ErrorLogger()
+
 public protocol ErrorLogging {
     func logError(_ error: any Swift.Error)
     func logError(_ error: any Swift.Error, into category: String?)
@@ -16,8 +18,6 @@ public protocol ErrorLogging {
 }
 
 public final class ErrorLogger: ErrorLogging {
-    static let shared = ErrorLogger()
-    
     public var logByCategory: [String: OSLog] = [:]
     public var loggerByCategory: [String: Any] = [:]
     

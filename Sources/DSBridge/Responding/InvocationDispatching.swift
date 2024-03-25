@@ -11,12 +11,13 @@ public protocol InvocationDispatching {
     var asyncResponseHandler: (AsyncResponse) -> Void { get set }
     func dispatch(_ invocation: IncomingInvocation) -> Response
     func addInterface(_ interface: ExposedInterface, by namespace: String)
+    func removeInterface(by namespace: String)
     func hasMethod(_ method: Method) -> Bool
 }
 
 open class InvocationDispatcher: InvocationDispatching {
     open var interfaces: [String: any ExposedInterface] = [:]
-    open var logger: any ErrorLogging = ErrorLogger.shared
+    open var logger: any ErrorLogging = sharedLogger
     
     open var asyncResponseHandler: (AsyncResponse) -> Void
     
@@ -32,6 +33,10 @@ open class InvocationDispatcher: InvocationDispatching {
     
     open func addInterface(_ interface: ExposedInterface, by namespace: String) {
         interfaces[namespace] = interface
+    }
+    
+    open func removeInterface(by namespace: String) {
+        interfaces.removeValue(forKey: namespace)
     }
     
     open func hasMethod(_ method: Method) -> Bool {

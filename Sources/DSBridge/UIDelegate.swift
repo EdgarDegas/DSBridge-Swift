@@ -9,19 +9,15 @@ import WebKit
 
 open class UIDelegate: NSObject, WKUIDelegate {
     open weak var designatedDelegate: (any WKUIDelegate)?
-    open var jsonSerializer: any JSONSerializing
-    open var logger: any ErrorLogging = ErrorLogger.shared
-    open var methodResolver: any MethodResolving
-    open var invocationHandler: (IncomingInvocation) -> JSON
+    open var invocationHandler: (String, String?) -> JSON
+    public let prefix: String
     
     init(
-        jsonSerializer: any JSONSerializing,
-        methodResolver: any MethodResolving,
-        invocationHandler: @escaping (IncomingInvocation) -> JSON
+        prefix: String,
+        invocationHandler: @escaping (String, String?) -> JSON
     ) {
-        self.jsonSerializer = jsonSerializer
+        self.prefix = prefix
         self.invocationHandler = invocationHandler
-        self.methodResolver = methodResolver
     }
     
     open func webView(
@@ -31,12 +27,9 @@ open class UIDelegate: NSObject, WKUIDelegate {
         initiatedByFrame frame: WKFrameInfo,
         completionHandler: @escaping (String?) -> Void
     ) {
-        if Self.promptIndicatesJSCall(prompt) {
-            handleJSCall(
-                prompt: prompt,
-                defaultText: defaultText,
-                completion: completionHandler
-            )
+        if promptIndicatesJSCall(prompt) {
+            let returnValue = invocationHandler(prompt, defaultText)
+            completionHandler(returnValue)
         } else {
             forwardToDesignatedDelegate(
                 webView,
@@ -45,26 +38,6 @@ open class UIDelegate: NSObject, WKUIDelegate {
                 initiatedByFrame: frame,
                 completionHandler: completionHandler
             )
-        }
-    }
-    
-    open func handleJSCall(
-        prompt: String,
-        defaultText: String?,
-        completion: @escaping (String?) -> Void
-    ) {
-        do {
-            let signature = try getSignature(from: defaultText)
-            let method = try getMethod(
-                from: prompt,
-                synchronous: signature.indicatesSynchronousCall
-            )
-            let invocation = IncomingInvocation(method: method, signature: signature)
-            let response = invocationHandler(invocation)
-            completion(response)
-        } catch {
-            logger.logError(error)
-            completion(Response.emptyJSON)
         }
     }
     
@@ -82,20 +55,6 @@ open class UIDelegate: NSObject, WKUIDelegate {
             initiatedByFrame: frame,
             completionHandler: completionHandler
         )
-    }
-    
-    open func getSignature(
-        from defaultText: String?
-    ) throws -> IncomingInvocation.Signature {
-        try jsonSerializer.readParamters(from: defaultText)
-    }
-    
-    open func getMethod(
-        from prompt: String,
-        synchronous: Bool
-    ) throws -> Method {
-        let raw = String(prompt.dropFirst(Self.prefix.count))
-        return try methodResolver.resolveMethodFromRaw(raw)
     }
     
     open override func responds(to aSelector: Selector!) -> Bool {
@@ -126,13 +85,9 @@ open class UIDelegate: NSObject, WKUIDelegate {
         )
     }
     
-    open class var prefix: String {
-        "_dsbridge="
-    }
-    
-    open class func promptIndicatesJSCall(
+    open func promptIndicatesJSCall(
         _ prompt: String
     ) -> Bool {
-        prompt.starts(with: Self.prefix)
+        prompt.starts(with: prefix)
     }
 }

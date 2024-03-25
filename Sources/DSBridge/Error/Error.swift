@@ -89,3 +89,23 @@ extension Error {
         case methodNotFound(String)
     }
 }
+
+extension Error {
+    public enum CallingJS: LoggableError {
+        public static var category: String {
+            "CallingJS"
+        }
+        
+        public var debugDescription: String {
+            switch self {
+            case .returnTypeMismatch(let value):
+                "JavaScript returned a value with mismatched type: \(value)"
+            case .underlying(let error):
+                "Underlying: \(error)"
+            }
+        }
+        
+        case returnTypeMismatch(Any)
+        case underlying(any Swift.Error)
+    }
+}
