@@ -26,8 +26,13 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
     private let evaluating: (JavaScript) -> Void
     private var incrementalID: Int = 0
     private var completionByID: [Int: Completion] = [:]
-    private var waitingScripts: JavaScript = ""
     private var initialized = false
+    private var waitingScripts: JavaScript = ""
+    /// A timer. Everytime a new script / call comes in, enqueue it and activate the timer. The timer fires
+    /// in 50ms to evaluate the enqueued scripts, before that, the evaluator enqueues all the new scripts
+    /// and calls into `waitingScripts`.
+    ///
+    /// Using a timer avoids the hassle of managing a pending state.
     private lazy var metronome = Metronome(timeInterval: 0.05, queue: serialQueue)
     
     /// Serial queue to access properties and evaluate scripts.
@@ -40,7 +45,6 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
         self.evaluating = evaluating
         metronome.eventHandler = { [weak self] in
             guard let self else { return }
-            guard initialized else { return }
             flush()
         }
     }
@@ -73,6 +77,7 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
         serialQueue.async { [weak self] in
             guard let self else { return }
             initialized = true
+            metronome.resume()
         }
     }
     
@@ -93,14 +98,22 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
     }
     
     private func flush() {
+        defer {
+            metronome.suspend()
+        }
+        guard initialized else { return }
+        guard !waitingScripts.isEmpty else { return }
         let scripts = waitingScripts
         waitingScripts = ""
         evaluating(scripts)
-        metronome.suspend()
     }
     
     private func enqueue(_ script: String) {
-        waitingScripts.append("\n\(script)")
+        if waitingScripts.isEmpty {
+            waitingScripts = script
+        } else {
+            waitingScripts.append("\n\(script)")
+        }
         metronome.resume()
     }
     
