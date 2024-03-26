@@ -13,7 +13,7 @@ class ViewController: UIViewController {
 }
 ```
 
-DSBridge-Swift does not rely on Objective-C runtime. Thus you can declare your interface with pure Swift types, with the bundled macro `Exposed`:
+DSBridge-Swift does not rely on Objective-C runtime. Thus you can declare your interface with pure Swift types:
 ```swift
 
 import Foundation
@@ -27,9 +27,9 @@ class MyInterface {
     func localMethod()
 }
 ```
-Add `unexposed` annotation to any function you don't want to expose, .
+Mark your interface `@Exposed` and that's it. Add `@unexposed` annotation to any function you don't want to expose.
 
-You can also declare your it with a struct. Or, even further, an enum! 
+If you don't need to declare it as a class, why not use a struct? Or, even further, an enum! 
 ```swift
 @Exposed
 enum EnumInterface {
@@ -77,7 +77,7 @@ bridge.call('asyncStyledFunction', function(v) { console.log(v) });
 // ""
 // Async response
 ```
-As you can see, there is a immediate empty return. The response sent by us is printed by the `function`.
+As you can see, there is a empty string returned. The response we sent in the interface is printed by the `function`.
 
 OK, we send async response with the completion in its first parameter. What does the second parameter, the `Bool` do then?
 
