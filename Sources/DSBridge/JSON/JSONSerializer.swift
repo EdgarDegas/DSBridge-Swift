@@ -64,6 +64,9 @@ public final class JSONSerializer: JSONSerializing {
     }
 
     public func serialize(_ object: Any) throws -> JSON {
+        guard JSONSerialization.isValidJSONObject(object) else {
+            throw Error.JSON.WritingError.invalidJSONObject(object)
+        }
         let encoded = try encode(object)
         guard let string = String(data: encoded, encoding: .utf8) else {
             throw Error.JSON.WritingError.failedToEncode(object)

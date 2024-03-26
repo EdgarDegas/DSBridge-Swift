@@ -59,11 +59,14 @@ extension Error.JSON {
                 "Failed to encode JSON data into UTF-8 text: \(object)"
             case .underlyingJSONEncoding(let error):
                 "Error from JSONEncoder: \(error)"
+            case .invalidJSONObject(let object):
+                "Object is not a valid JSON object: \(object)"
             }
         }
         
         case underlyingJSONEncoding(_ error: Swift.Error)
         case failedToEncode(Any)
+        case invalidJSONObject(Any)
     }
 }
 
