@@ -61,7 +61,7 @@ open class WebView: WKWebView {
     open func call(
         _ methodName: String,
         with parameter: [Any] = [],
-        completion: ((Any?) -> Void)?
+        completion: ((Any?) -> Void)? = nil
     ) {
         keystone.call(methodName, with: parameter) {
             let result = try? $0.get()
