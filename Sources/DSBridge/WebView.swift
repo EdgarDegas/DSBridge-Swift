@@ -10,10 +10,10 @@ import WebKit
 open class WebView: WKWebView {
     open override var uiDelegate: (any WKUIDelegate)? {
         get {
-            innerUIDelegate
+            injectedUIDelegate.designatedDelegate
         }
         set {
-            innerUIDelegate.designatedDelegate = newValue
+            injectedUIDelegate.designatedDelegate = newValue
         }
     }
     
@@ -28,7 +28,7 @@ open class WebView: WKWebView {
     
     open var dismissalHandler: (() -> Void)?
     
-    open lazy var innerUIDelegate = UIDelegate(
+    open lazy var injectedUIDelegate = UIDelegate(
         prefix: keystone.invocationPrefix
     ) { [weak self] prompt, defaultText in
         self?.keystone.handleRawInvocation(
@@ -47,8 +47,8 @@ open class WebView: WKWebView {
         setEnvironmentVariable()
     }
     
-    func setEnvironmentVariable() {
-        super.uiDelegate = innerUIDelegate
+    private func setEnvironmentVariable() {
+        super.uiDelegate = injectedUIDelegate
         configuration.userContentController.addUserScript(
             WKUserScript(
                 source: "window._dswk=true;",
@@ -60,23 +60,33 @@ open class WebView: WKWebView {
     
     open func call(
         _ methodName: String,
-        with parameter: [Any]
+        with parameter: [Any] = [],
+        completion: ((Any?) -> Void)?
     ) {
-        keystone.call(methodName, with: parameter, completion: nil)
+        keystone.call(methodName, with: parameter) {
+            let result = try? $0.get()
+            completion?(result)
+        }
     }
     
     /// Call JavaScript handler.
     open func call<T>(
         _ methodName: String,
-        with parameter: [Any],
+        with parameter: [Any] = [],
+        thatReturns returnType: T.Type,
         completion: @escaping (Result<T, any Swift.Error>) -> Void
     ) {
         keystone.call(methodName, with: parameter) {
-            guard let result = $0 as? T else {
-                completion(.failure(Error.CallingJS.returnTypeMismatch($0)))
-                return
+            switch $0 {
+            case .success(let result):
+                guard let result = result as? T else {
+                    completion(.failure(Error.CallingJS.returnTypeMismatch($0)))
+                    return
+                }
+                completion(.success(result))
+            case .failure(let error):
+                completion(.failure(error))
             }
-            completion(.success(result))
         }
     }
     
@@ -100,20 +110,4 @@ open class WebView: WKWebView {
     ) {
         keystone.hasJavaScriptMethod(named: name, completion: completion)
     }
-    
-    /// Set debug mode. if in debug mode, some errors will be prompted by a dialog
-    /// and the exception caused by the native handlers will not be captured.
-    open func setDebugMode(_ debug: Bool) {
-        
-    }
-    
-    open func disableJavaScriptDialogBlock(_ disable: Bool) {
-        
-    }
-    
-    /// custom the  label text of  JavaScript dialog that includes alert/confirm/prompt.
-    open func customJavaScriptDialogLabelTitles(_ dic: [AnyHashable: Any]?) {
-        
-    }
-    
 }
