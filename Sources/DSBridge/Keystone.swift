@@ -160,7 +160,7 @@ open class Keystone: KeystoneProtocol {
             let deletingScript = writeDeletingScript(
                 for: functionName, if: completed
             )
-            evaluateJavaScript(
+            javaScriptEvaluator.evaluate(
                 writeScriptCallingBack(
                     to: functionName,
                     encodedData: encoded,
@@ -178,7 +178,7 @@ open class Keystone: KeystoneProtocol {
         ) -> String {
             """
             try {
-                \(functionName)(JSON.parse(decodeURIComponent(\(encodedData))));
+                \(functionName)(JSON.parse(decodeURIComponent('\(encodedData)')));
                 \(deletingScript);
             } catch(e) {
             
