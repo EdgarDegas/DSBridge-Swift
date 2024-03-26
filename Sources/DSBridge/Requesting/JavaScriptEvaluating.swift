@@ -126,7 +126,7 @@ open class JavaScriptEvaluator: JavaScriptEvaluating {
         {
             "method": "\(functionName)",
             "callbackId": \(id),
-            "data": \(parameter)
+            "data": '\(parameter)'
         }
         """
         let script = "window._handleMessageFromNative(\(message))"

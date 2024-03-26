@@ -58,13 +58,26 @@ open class WebView: WKWebView {
         )
     }
     
+    open func call(
+        _ methodName: String,
+        with parameter: [Any]
+    ) {
+        keystone.call(methodName, with: parameter, completion: nil)
+    }
+    
     /// Call JavaScript handler.
     open func call<T>(
         _ methodName: String,
-        with parameter: Any?,
-        completion: ((Result<T, any Swift.Error>) -> Void)? = nil
+        with parameter: [Any],
+        completion: @escaping (Result<T, any Swift.Error>) -> Void
     ) {
-        keystone.call(methodName, with: parameter, completion: completion)
+        keystone.call(methodName, with: parameter) {
+            guard let result = $0 as? T else {
+                completion(.failure(Error.CallingJS.returnTypeMismatch($0)))
+                return
+            }
+            completion(.success(result))
+        }
     }
     
     ///Add a JavaScript Object to dsBridge with namespace.

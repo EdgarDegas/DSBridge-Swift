@@ -10,10 +10,10 @@ import Foundation
 public protocol KeystoneProtocol {
     var invocationPrefix: String { get }
     func handleRawInvocation(prompt: String, defaultText: String?) -> JSON?
-    func call<T>(
+    func call(
         _ methodName: String,
         with parameter: Any?,
-        completion: ((Result<T, any Swift.Error>) -> Void)?
+        completion: ((Result<Any, any Swift.Error>) -> Void)?
     )
     func addInterface(_ interface: ExposedInterface, by namespace: String)
     func removeInterface(by namespace: String)
@@ -62,19 +62,15 @@ open class Keystone: KeystoneProtocol {
         )
     }
     
-    open func call<T>(
+    open func call(
         _ methodName: String,
         with parameter: Any?,
-        completion: ((Result<T, any Swift.Error>) -> Void)?
+        completion: ((Result<Any, any Swift.Error>) -> Void)?
     ) {
         do {
             let encoded = try encodeParameter(parameter)
             javaScriptEvaluator.call(methodName, with: encoded) {
-                guard let result = $0 as? T else {
-                    completion?(.failure(Error.CallingJS.returnTypeMismatch($0)))
-                    return
-                }
-                completion?(.success(result))
+                completion?(.success($0))
             }
         } catch {
             logger.logError(error)
@@ -104,7 +100,7 @@ open class Keystone: KeystoneProtocol {
     
     open func hasJavaScriptMethod(named name: String, completion: @escaping (Bool) -> Void) {
         call("_hasJavascriptMethod", with: name) {
-            let has: Bool? = try? $0.get()
+            let has = try? $0.get() as? Bool
             completion(has ?? false)
         }
     }

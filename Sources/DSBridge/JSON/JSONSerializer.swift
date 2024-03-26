@@ -73,7 +73,10 @@ public final class JSONSerializer: JSONSerializing {
     
     private func encode(_ object: Any) throws -> Data {
         do {
-            return try JSONSerialization.data(withJSONObject: object)
+            return try JSONSerialization.data(
+                withJSONObject: object,
+                options: .fragmentsAllowed
+            )
         } catch {
             throw Error.JSON.WritingError.underlyingJSONEncoding(error)
         }
