@@ -187,7 +187,7 @@ final class EvaluatorTests: XCTestCase {
         {
             "method": "\(functionName)",
             "callbackId": \(id),
-            "data": \(parameter)
+            "data": '\(parameter)'
         }
         """
         return "window._handleMessageFromNative(\(message))"
