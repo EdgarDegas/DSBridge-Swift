@@ -32,7 +32,7 @@ import ObjectiveC
  */
 
 public enum PredefinedInvocation {
-    case hasMethod(String)
+    case hasMethod(MethodQuery)
     case close
     case handleResponseFromJS(FromJS.Response)
     case initialize
@@ -48,6 +48,8 @@ public final class PredefinedInterface {
         "_dsb"
     }
     
+    public var logger: any ErrorLogging = sharedLogger
+    
     public typealias Handler = (PredefinedInvocation) -> Any
     
     private let predefinedInvocationHandler: Handler
@@ -62,6 +64,7 @@ public final class PredefinedInterface {
             let data = info["data"],
             let completed = info["complete"] as? Bool
         else {
+            logger.logMessage("_dsb.returnValue called with wrong parameters.", at: .error)
             return
         }
         let response = FromJS.Response(id: id, data: data, completed: completed)
@@ -72,9 +75,16 @@ public final class PredefinedInterface {
         _ = predefinedInvocationHandler(.initialize)
     }
     
-    func hasNativeMethod(_ rawMethod: String) -> Bool {
+    func hasNativeMethod(_ info: [String: String]) -> Bool {
+        guard
+            let rawName = info["name"],
+            let rawType = info["type"]
+        else {
+            logger.logMessage("hasNativeMethod called with wrong parameters.", at: .error)
+            return false
+        }
         return predefinedInvocationHandler(
-            .hasMethod(rawMethod)
+            .hasMethod(MethodQuery(rawName: rawName, rawType: rawType))
         ) as? Bool ?? false
     }
     

@@ -12,7 +12,7 @@ public protocol InvocationDispatching {
     func dispatch(_ invocation: IncomingInvocation) -> Response
     func addInterface(_ interface: ExposedInterface, by namespace: String)
     func removeInterface(by namespace: String)
-    func hasMethod(_ method: Method) -> Bool
+    func hasMethod(_ method: Method, isSynchronous: Bool?) -> Bool
 }
 
 open class InvocationDispatcher: InvocationDispatching {
@@ -39,13 +39,19 @@ open class InvocationDispatcher: InvocationDispatching {
         interfaces.removeValue(forKey: namespace)
     }
     
-    open func hasMethod(_ method: Method) -> Bool {
-        getInterface(for: method) != nil
+    open func hasMethod(_ method: Method, isSynchronous: Bool?) -> Bool {
+        getInterface(for: method, isSynchronous: isSynchronous) != nil
     }
     
     open func dispatch(_ invocation: IncomingInvocation) -> Response {
         let method = invocation.method
-        guard let interface = getInterface(for: method) else {
+        guard let interface = getInterface(
+            for: method,
+            isSynchronous: nil
+        ) else {
+            logger.logError(
+                Error.NameResolvingError.methodNotFound("\(method)")
+            )
             return .empty
         }
         if invocation.isSynchronous {
@@ -78,17 +84,20 @@ open class InvocationDispatcher: InvocationDispatching {
         }
     }
     
-    private func getInterface(for method: Method) -> ExposedInterface? {
+    private func getInterface(
+        for method: Method,
+        isSynchronous: Bool?
+    ) -> ExposedInterface? {
         guard let interface = interfaces[method.namespace] else {
             logger.logError(
                 Error.NameResolvingError.namespaceNotFound(method.namespace)
             )
             return nil
         }
-        guard interface.hasMethod(named: method.name) else {
-            logger.logError(
-                Error.NameResolvingError.methodNotFound("\(method)")
-            )
+        guard interface.hasMethod(
+            named: method.name,
+            isSynchronous: isSynchronous
+        ) else {
             return nil
         }
         return interface

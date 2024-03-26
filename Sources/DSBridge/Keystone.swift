@@ -39,7 +39,7 @@ open class Keystone: KeystoneProtocol {
     }
     
     open var evaluateJavaScript: (String) -> Void
-    open var dismissalHandler: (() -> Void)?
+    open var dismissalHandler: () -> Void
     
     open lazy var javaScriptEvaluator: any JavaScriptEvaluating =
         JavaScriptEvaluator 
@@ -49,13 +49,14 @@ open class Keystone: KeystoneProtocol {
     
     public init(
         javaScriptEvaluationHandler: @escaping (String) -> Void,
-        dismissalHandler: (() -> Void)?,
+        dismissalHandler: @escaping () -> Void,
         jsonSerializer: any JSONSerializing = JSONSerializer(),
         methodResolver: any MethodResolving = MethodResolver()
     ) {
         self.evaluateJavaScript = javaScriptEvaluationHandler
         self.jsonSerializer = jsonSerializer
         self.methodResolver = methodResolver
+        self.dismissalHandler = dismissalHandler
         invocationDispatcher.addInterface(
             predefinedExposedInterface,
             by: PredefinedInterface.namespace
@@ -127,17 +128,19 @@ open class Keystone: KeystoneProtocol {
         case .initialize:
             javaScriptEvaluator.initialize()
         case .close:
-            dismissalHandler?()
-        case .hasMethod(let rawMethod):
+            dismissalHandler()
+        case .hasMethod(let methodQuery):
             do {
                 let method = try methodResolver.resolveMethodFromRaw(
-                    rawMethod
+                    methodQuery.rawName
                 )
-                let result = invocationDispatcher.hasMethod(method)
+                let result = invocationDispatcher.hasMethod(
+                    method, isSynchronous: methodQuery.type.isSynchronous
+                )
                 return result
             } catch {
                 logger.logMessage(
-                    "Failed to resolve method from text: \(rawMethod).",
+                    "Failed to resolve method from text: \(methodQuery).",
                     at: .debug
                 )
                 return false

@@ -28,15 +28,16 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         let functions = getFunctions(of: declaration)
-        let dictionaryLiteral = dictionaryLiteral(of: functions)
+        let synchronousFunctions = functions.filter(\.isSynchronous)
+        let asynchronousFunctions = functions.filter(\.isAsynchronous)
         let synchronousCases = Self.casesForSynchronousFunctions(
-            functions.filter(\.isSynchronous)
+            synchronousFunctions
         )
         let synchronousHandlingBody = if synchronousCases.isEmpty {
             "return nil"
         } else {
             """
-            let function = exposed[methodName]
+            let function = synchronousFunctions[methodName]
             switch methodName {
             \(synchronousCases.joined(separator: "\n"))
             default:
@@ -46,13 +47,13 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             """
         }
         let asynchronousCases = Self.casesForAsynchronousFunctions(
-            functions.filter(\.isAsynchronous)
+            asynchronousFunctions
         )
         let asynchronousHandlingBody = if asynchronousCases.isEmpty {
             ""
         } else {
             """
-            let function = exposed[methodName]
+            let function = asynchronousFunctions[methodName]
             switch methodName {
             \(asynchronousCases.joined(separator: "\n"))
             default:
@@ -62,8 +63,13 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         }
         return [
             """
-            var exposed: [String: Any] {[
-                \(raw: dictionaryLiteral)
+            var synchronousFunctions: [String: Any] {[
+                \(raw: dictionaryLiteral(of: synchronousFunctions))
+            ]}
+            """,
+            """
+            var asynchronousFunctions: [String: Any] {[
+                \(raw: dictionaryLiteral(of: asynchronousFunctions))
             ]}
             """,
             """
@@ -84,8 +90,18 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             }
             """,
             """
-            public func hasMethod(named name: String) -> Bool {
-                exposed.keys.contains(name)
+            public func hasMethod(
+                named name: String,
+                isSynchronous: Bool?
+            ) -> Bool {
+                if isSynchronous == true {
+                    synchronousFunctions.keys.contains(name)
+                } else if isSynchronous == false {
+                    asynchronousFunctions.keys.contains(name)
+                } else {
+                    synchronousFunctions.keys.contains(name) ||
+                        asynchronousFunctions.keys.contains(name)
+                }
             }
             """
         ]

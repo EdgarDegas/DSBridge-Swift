@@ -8,7 +8,10 @@
 import Foundation
 
 public protocol ExposedInterface {
-    func hasMethod(named name: String) -> Bool
+    func hasMethod(
+        named name: String,
+        isSynchronous: Bool?
+    ) -> Bool
     func handle(calling methodName: String, with parameter: Any?) -> Any?
     func handle(calling methodName: String, with parameter: Any?, completion: @escaping (Any?, Bool) -> Void)
 }
