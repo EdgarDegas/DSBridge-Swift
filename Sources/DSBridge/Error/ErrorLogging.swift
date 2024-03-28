@@ -43,7 +43,7 @@ public final class ErrorLogger: ErrorLogging {
     
     public func logMessage(_ message: String, at level: OSLogType, into category: String?) {
         let category = category ?? ""
-        if #available(iOS 14.0, *) {
+        if #available(iOS 14.0, macOS 11.0, *) {
             let logger = getOrCreateLogger(by: category)
             logger.log(level: level, "\(message)")
         } else {
@@ -52,7 +52,7 @@ public final class ErrorLogger: ErrorLogging {
         }
     }
     
-    @available(iOS 14.0, *)
+    @available(iOS 14.0, macOS 11.0, *)
     private func getOrCreateLogger(by category: String) -> Logger {
         loggerByCategory[
             category,
