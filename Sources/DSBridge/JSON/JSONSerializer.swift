@@ -9,7 +9,7 @@ import Foundation
 
 public final class JSONSerializer: JSONSerializing {
     static var readingOptions: JSONSerialization.ReadingOptions {
-        if #available(iOS 15, *) {
+        if #available(iOS 15, macOS 12.0, *) {
             return [.json5Allowed, .fragmentsAllowed]
         } else {
             return .fragmentsAllowed
