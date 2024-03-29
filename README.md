@@ -1,4 +1,14 @@
-A [DSBridge-iOS](https://github.com/wendux/DSBridge-IOS) fork in Swift.
+[^1]
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/EdgarDegas/DSBridge-Swift/assets/12840982/ed61fed2-a356-4772-a0b0-38a39bd0d5a9">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/EdgarDegas/DSBridge-Swift/assets/12840982/8c1ad005-6866-4ea3-a690-d33e564fde57">
+  <img alt="Logo" src="https://github.com/EdgarDegas/DSBridge-Swift/assets/12840982/e1e1d27c-efe4-401d-87a2-3b5c371e0af9">
+</picture>
+
+[^1]: Designed by [Freepik](https://freepik.com)
+
+DSBridge-Swift is a [DSBridge-iOS](https://github.com/wendux/DSBridge-IOS) fork in Swift. It allows developers to send method calls back and forth between Swift and JavaScript.
 
 # Usage
 First of all, use `DSBridge.WebView` instead of `WKWebView`:
