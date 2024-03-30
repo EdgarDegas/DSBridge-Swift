@@ -14,6 +14,7 @@ open class WebView: WKWebView {
         }
         set {
             injectedUIDelegate.designatedDelegate = newValue
+            super.uiDelegate = injectedUIDelegate
         }
     }
     
