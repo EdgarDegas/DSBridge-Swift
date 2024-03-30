@@ -22,7 +22,9 @@ public extension LoggableError {
 }
 
 public enum Error {
-    
+    static var hash: String = "*hashed*"
+    static var hashObject = Hash()
+    struct Hash { }
 }
 
 extension Error {
@@ -38,7 +40,11 @@ extension Error.JSON {
         public var debugDescription: String {
             switch self {
             case .invalidCallingFromJS(let string):
+                #if DEBUG
                 "JS called with invalid parameters: \(string)"
+                #else
+                "JS called with invalid parameters: \(Error.hash)"
+                #endif
             case .underlyingJSONSerialization(let error):
                 "Error from JSONSerialization: \(error)"
             }
@@ -56,11 +62,19 @@ extension Error.JSON {
         public var debugDescription: String {
             switch self {
             case .failedToEncode(let object):
+                #if DEBUG
                 "Failed to encode JSON data into UTF-8 text: \(object)"
+                #else
+                "Failed to encode JSON data into UTF-8 text: \(Error.hashObject)"
+                #endif
             case .underlyingJSONEncoding(let error):
                 "Error from JSONEncoder: \(error)"
             case .invalidJSONObject(let object):
+                #if DEBUG
                 "Object is not a valid JSON object: \(object)"
+                #else
+                "Object is not a valid JSON object: \(Error.hashObject)"
+                #endif
             }
         }
         
