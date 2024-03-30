@@ -12,7 +12,7 @@ open class UIDelegate: NSObject, WKUIDelegate {
     open var invocationHandler: (String, String?) -> JSON
     public let prefix: String
     
-    init(
+    public init(
         prefix: String,
         invocationHandler: @escaping (String, String?) -> JSON
     ) {
