@@ -29,7 +29,16 @@ public struct Exposed: MemberMacro, ExtensionMacro {
     ) throws -> [DeclSyntax] {
         let functions = getFunctions(of: declaration)
         let synchronousFunctions = functions.filter(\.isSynchronous)
-        let asynchronousFunctions = functions.filter(\.isAsynchronous)
+        let asynchronousFunctionAndCompletions: [
+            (FunctionDeclSyntax, FunctionTypeSyntax)
+        ] = functions
+            .lazy
+            .filter {
+                $0.asynchronousCompletion != nil
+            }
+            .map {
+                ($0, $0.asynchronousCompletion!)
+            }
         let synchronousCases = Self.casesForSynchronousFunctions(
             synchronousFunctions
         )
@@ -47,7 +56,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             """
         }
         let asynchronousCases = Self.casesForAsynchronousFunctions(
-            asynchronousFunctions
+            asynchronousFunctionAndCompletions
         )
         let asynchronousHandlingBody = if asynchronousCases.isEmpty {
             ""
@@ -69,7 +78,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             """,
             """
             var asynchronousFunctions: [String: Any] {[
-                \(raw: dictionaryLiteral(of: asynchronousFunctions))
+                \(raw: dictionaryLiteral(of: asynchronousFunctionAndCompletions.map(\.0)))
             ]}
             """,
             """
@@ -171,26 +180,57 @@ public struct Exposed: MemberMacro, ExtensionMacro {
     }
     
     static func casesForAsynchronousFunctions(
-        _ functions: [FunctionDeclSyntax]
+        _ functions: [(FunctionDeclSyntax, FunctionTypeSyntax)]
     ) -> [String] {
-        return functions.map { function in
+        return functions.map { (function, completion) in
             let numberOfParameters =
                 function.signature.parameterClause.parameters.count
+            let numberOfParametersInCompletion =
+                completion.parameters.count
             return caseStatements(
                 caseClause(function.name.text),
                 convertion: convertionClauses(function: function),
                 defaultReturn: "",
-                calling: callingClause(numberOfParameters: numberOfParameters)
+                calling: callingClause(
+                    numberOfParameters: numberOfParameters,
+                    numberOfParametersInCompletion:
+                        numberOfParametersInCompletion
+                )
             )
         }
         
-        func callingClause(numberOfParameters: Int) -> String {
-            if numberOfParameters == 2 {
-                "function(parameter, completion)"
+        func callingClause(
+            numberOfParameters: Int,
+            numberOfParametersInCompletion: Int
+        ) -> String {
+            let completionCallingClause = completionCallingClause(
+                numberOfParameters: numberOfParametersInCompletion
+            )
+            return if numberOfParameters == 2 {
+                """
+                function(parameter) {
+                    \(completionCallingClause)
+                }
+                """
             } else if numberOfParameters == 1 {
-                "function(completion)"
+                """
+                function {
+                    \(completionCallingClause)
+                }
+                """
             } else {
                 "function()"
+            }
+            
+            func completionCallingClause(
+                numberOfParameters: Int
+            ) -> String {
+                if numberOfParameters == 1 {
+                    // the second parameter defaults to true
+                    "completion($0, true)"
+                } else {
+                    "completion($0, $1)"
+                }
             }
         }
     }
