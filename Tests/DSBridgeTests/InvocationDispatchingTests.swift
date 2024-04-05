@@ -41,6 +41,10 @@ final class ExampleExposedInterface {
         completion(Self.f4ReturnValue.0, Self.f4ReturnValue.1)
     }
     
+    func f41(completion: (String) -> Void) {
+        completion(Self.f4ReturnValue.0)
+    }
+    
     func f5(flag: Bool, completion: @escaping (Int, Bool) -> Void) {
         f5PassedInParameter = flag
         completion(Self.f5ReturnValue.0, Self.f5ReturnValue.1)
@@ -112,6 +116,25 @@ final class InvocationDispatchingTests: XCTestCase {
             IncomingInvocation(
                 method: Method(
                     namespace: exampleNamespace, name: "f4"
+                ),
+                signature: IncomingInvocation.Signature(
+                    parameter: "string value",
+                    callbackFunctionName: "funcInJS"
+                )
+            )
+        )
+        XCTAssert(returned.code == Response.empty.code)
+        XCTAssert(returned.data as! String == "")
+        XCTAssert(asyncResponse.functionName == "funcInJS")
+        XCTAssert(asyncResponse.data as! String == ExampleExposedInterface.f4ReturnValue.0)
+        XCTAssert(asyncResponse.completed == ExampleExposedInterface.f4ReturnValue.1)
+    }
+    
+    func testInvokingSingleParameterCompletion() throws {
+        let returned = dispatcher.dispatch(
+            IncomingInvocation(
+                method: Method(
+                    namespace: exampleNamespace, name: "f41"
                 ),
                 signature: IncomingInvocation.Signature(
                     parameter: "string value",

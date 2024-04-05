@@ -8,9 +8,36 @@
 
 [^1]: Designed by [Freepik](https://freepik.com)
 
+[简体中文版](https://github.com/EdgarDegas/DSBridge-Swift/blob/main/README.zh-Hans.md)
+
 DSBridge-Swift is a [DSBridge-iOS](https://github.com/wendux/DSBridge-IOS) fork in Swift. It allows developers to send method calls back and forth between Swift and JavaScript.
 
+# Installation
+
+DSBridge is available on both iOS and Android. 
+
+This repo is a pure Swift version. You can integrate it with Swift Package Manager.
+
+> It's totally OK to use Swift Package Manager together with CocoaPods or other tools. If Swift Package Manager is banned, use [the original Objective-C version DSBridge-iOS](https://github.com/wendux/DSBridge-IOS).
+
+For Android, see [DSBridge-Android](https://github.com/wendux/DSBridge-Android).
+
+You can link the JavaScript with CDN:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/dsbridge@3.1.4/dist/dsbridge.js"></script>
+```
+
+Or install with npm:
+
+```shell
+npm install dsbridge@3.1.4
+```
+
 # Usage
+
+## Brief
+
 First of all, use `DSBridge.WebView` instead of `WKWebView`:
 ```swift
 import class DSBridge.WebView
@@ -23,23 +50,31 @@ class ViewController: UIViewController {
 }
 ```
 
-DSBridge-Swift does not rely on Objective-C runtime. Thus you can declare your interface with pure Swift types:
+Declare your `Interface` with the `@Exposed` annotation. All the functions will be exposed to JavaScript:
 ```swift
-
 import Foundation
 import typealias DSBridge.Exposed
 import protocol DSBridge.ExposedInterface
 
 @Exposed
 class MyInterface {
-    func returnValue() -> Int { 101 }
+    func addingOne(to input: Int) -> Int {
+        input + 1
+    }
+}
+```
+For functions you do not want to expose, add `@unexposed` to it:
+
+```swift
+@Exposed
+class MyInterface {
     @unexposed
     func localMethod()
 }
 ```
-Mark your interface `@Exposed` and that's it. Add `@unexposed` annotation to any function you don't want to expose.
 
-If you don't need to declare it as a class, why not use a struct? Or, even further, an enum! 
+Aside from `class`, you can declare your `Interface` in `struct` or `enum`:
+
 ```swift
 @Exposed
 enum EnumInterface {
@@ -57,31 +92,37 @@ enum EnumInterface {
 }
 ```
 
-You then add your interfaces into `DSBridge.WebView`, with or without a namespace:
+You then add your interfaces into `DSBridge.WebView`.
+
+The second parameter `by` specifies namespace. `nil` or an empty string indicates no namespace. There can be only one non-namespaced `Interface` at once. Also, there can be only one `Interface` under a namespace. Adding an `Interface` to an existing namespace replaces the original one.
+
 ```swift
-webView.addInterface(Interface(), by: nil)  // `nil` works the same as ""
+webView.addInterface(MyInterface(), by: nil)  // `nil` works the same as ""
 webView.addInterface(EnumInterface.onStreet, by: "street")
 webView.addInterface(EnumInterface.inSchool, by: "school")
 ```
 
-Done. You can call them from JavaScript now:
+Done. You can call them from JavaScript now. Do prepend the namespace before the method names:
 ```javascript
-bridge.call('returnValue')  // returns 101
+bridge.call('addingOne', 5)  // returns 6
 bridge.call('street.getName')  // returns Heisenberg
 bridge.call('school.getName')  // returns Walter White
 ```
 
-Asynchronous functions are a bit more complicated. You have to use a completion handler, whose second parameter is a `Bool`.
+> DSBridge supports multi-level namespaces, like `a.b.c`.
+
+Asynchronous functions are a little bit different. You have to use a completion handler to send your response:
+
 ```swift
 @Exposed
 class MyInterface {
-    func asyncStyledFunction(callback: (String, Bool) -> Void) {
-        callback("Async response", true)
+    func asyncStyledFunction(callback: (String) -> Void) {
+        callback("Async response")
     }
 }
 ```
 
-Call from JavaScript with a function as the last parameter:
+Call from JavaScript with a function accordingly:
 ```javascript
 bridge.call('asyncStyledFunction', function(v) { console.log(v) });
 // ""
@@ -89,13 +130,15 @@ bridge.call('asyncStyledFunction', function(v) { console.log(v) });
 ```
 As you can see, there is a empty string returned. The response we sent in the interface is printed by the `function`.
 
-OK, we send async response with the completion in its first parameter. What does the second parameter, the `Bool` do then?
+DSBridge allows us to send multiple responses to a single invocation. To do so, add a `Bool` parameter to your completion. The `Bool` means `isCompleted` semantically. If you pass in a `false`, you get the chance to repeatedly call it in future. Once you call it with `true`, the callback function will be deleted from the JavaScript side:
 
-The `Bool` means `isCompleted` semantically. If you pass in a `false`, you get the chance to repeatedly call it in future. Once you call it with `true`, the callback function will be deleted from the JavaScript side:
 ```swift
 @Exposed
 class MyInterface {
-    func asyncFunction(input: Int, completion: @escaping (Int, Bool) -> Void) {
+    func asyncFunction(
+        input: Int, 
+        completion: @escaping (Int, Bool) -> Void
+    ) {
         // Use `false` to ask JS to keep the callback
         completion(input + 1, false)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -122,7 +165,6 @@ bridge.call('asyncFunction', 1, function(v) { console.log(v) });
 // 4
 ```
 
-What will happen if we remove the `Bool` from the completion, you might ask. It won't compile. It might shock you how rough the `Exposed` macro is implemented if you click the Xcode error.
 # Declaration Rules
 ## Allowed Interface Types
 You can declare your interface as these types:
@@ -134,39 +176,93 @@ You can declare your interface as these types:
 ## Allowed Data Types
 You can receive or send the following types:
 - String
-- Int, Double
+- Int, Double (types toll-free bridged to NSNumber)
 - Bool
+- Standard JSON top-level objects:
 
-And standard JSON top-level objects:
-- Dictionary that's encodable
-- Array that's encodable
+    - Dictionary that's encodable
+
+    - Array that's encodable
+
 
 ## Allowed Function Declarations
+DSBridge-Swift ignores argument labels and parameter names of your functions. Thus you can name your parameters whatever you want.
+
+#### Synchronous Functions
+
+About parameters, synchronous functions can have:
+
+- 1 parameter, which is one of the above-mentioned *Allowed Data Types*
+- no parameter
+
+About return value, synchronous functions can have:
+
+- return value that's one of the above-mentioned *Allowed Data Types*
+- no return value
+
 For simplicity, we use `Allowed` to represent the before-mentioned Allowed Data Types.
-You can define your synchronous functions in three ways:
 
 ```swift
 func name()
 func name(Allowed)
 func name(Allowed) -> Allowed
 ```
-You can have at most one parameter. You can name it with anything, `func name(_ input: Int)`, `func name(using input: Int)`, or whatever you want.
+#### Asynchronous Functions
 
-For asynchronous functions:
+Asynchronous functions are allowed to have 1 or 2 parameters and no return value.
+
+If there are 2 parameters, the first one must be one of the above-mentioned *Allowed Data Types*.
+
+The last parameter has to be a closure that returns nothing (i.e., `Void`). For parameters, the closure can have:
+
+- 1 parameter, one of the above-mentioned *Allowed Data Types*
+- 2 parameters, the first one is one of the above-mentioned *Allowed Data Types* and the second one is a `Bool`
+
 ```swift
-typealias Completion = (Allowed, Bool) -> Bool
-func name(Completion)
-func name(Allowed, Completion)
-```
-You can have your completion attributed with `@ecaping` if you need it to persist longer than the function call. 
+typealias Completion = (Allowed) -> Void
+typealias RepeatableCompletion = (Allowed, Bool) -> Void
 
-Like the parameter, you can name the completion whatever you like.
-# JavaScript side
-Check out [the original repo](https://github.com/wendux/DSBridge-IOS) for how to use the JavaScript DSBridge.
+func name(Completion)
+func name(RepeatableCompletion)
+func name(Allowed, Completion)
+func name(Allowed, RepeatableCompletion)
+```
+Attribute your closure with `@ecaping` if needed. Otherwise, keep in mind that your functions run on the main thread and try not to block it.
 
 # Differences with DSBridge-iOS
+
+## Seamless `WKWebView` Experience
+
+When using the old DSBridge-iOS, in order to implement `WKWebView.uiDelegate`, you'd have to set `dsuiDelegate` instead. In DSBridge-Swift, you can just set `uiDelegate`.
+
+The old `dsuiDelegate` does not respond to new APIs, such as one that's released on iOS 16.4:
+
+```swift
+@available(iOS 16.4, *)
+func webView(
+    _ webView: WKWebView,
+    willPresentEditMenuWithAnimator animator: any UIEditMenuInteractionAnimating
+) {
+        
+}
+```
+
+Even if your `dsuiDelegate` does implement it, it won't get called on text selections or editing menu animations. The reason is that the old DSBridge-iOS relay those API calls to you by implementing them ahead of time and calling `dsuiDelegate` inside those implementations. This causes it to suffer from iOS iterations. Especially that it crashes when it tries to use the deprecated `UIAlertView`.
+
+DSBridge-Swift, instead, makes better use of iOS Runtime features to avoid standing between you and the web view. You can set the `uiDelegate` to your own object just like what you do with bare `WKWebView` and all the delegation methods will work as if DSBridge is not there.
+
+On the contrary, you'd have to do the dialog thing yourself. And all the dialog related APIs are removed, along with the `dsuiDelegate`.
+
+## Static instead of Dynamic
+
+When using the old DSBridge-iOS, your *JavaScript Object* has to be an `NSObject` subclass. Functions in it have to be prefixed with `@objc`. DSBridge-Swift, however, is much more Swift-ish. You can use pure Swift types like `class` or even `struct` and `enum`.
+
+## Customizable
+
+DSBridge-Swift provides highly customizable flexibility which allows you to change almost any part of it. You can even extends it to use it with another piece of completely different JavaScript. See section *Open / Close Principle* below.
+
 ## API Changes
-### Newly added:
+### Newly added
 A new calling method that allows you to specify the expected return type and returns a `Result<T, Error>` instead of an `Any`.
 ```swift
 call<T>(
@@ -176,40 +272,39 @@ call<T>(
     completion: @escaping (Result<T, any Swift.Error>) -> Void
 )
 ```
-### Renamed:
+### Renamed
 - `callHandler` is renamed to `call`
 - `setJavascriptCloseWindowListener` to `dismissalHandler`
 - `addJavascriptObject` to `addInterface`
 - `removeJavascriptObject` to `removeInterface`
 
-### Removed:
-`loadUrl(_: String)` is removed. Define your own one if you need it.
+### Removed
+- `loadUrl(_: String)` is removed. Define your own one if you need it
 
-`onMessage`, as a private method marked public, is removed.
+- `onMessage`, a public method that's supposed to be private, is removed
 
-The old DSBridge-iOS relay all the `WKUIDelegate` calls for you, which cause it to suffer from iOS iteration. Especially that it crashes when it tries to show the deprecated `UIAlertView`.
-
-DSBridge-Swift, instead, makes better use of iOS Runtime features to avoid standing between you and the web view. You can set the `uiDelegate` to your own object just like what you do with the bare `WKWebView`. 
-
-On the contrary, you'd have to do the dialog thing yourself. And all the dialog related APIs are removed, along with the `dsuiDelegate`:
 - `dsuiDelegate`
 - `disableJavascriptDialogBlock`
 - `customJavascriptDialogLabelTitles`
 - and all the `WKUIDelegate` implementations
-## Other minor differences
+### Not Implemented
 
-- Does not require `NSObjectProtocol` for interfaces and `@objc` for functions.
 - Debug mode not implemented yet.
 
-# Customization
+# Open / Close Principle
 
-DSBridge-Swift really shines on how it allows you to customize it.
-## Resolving Incoming Calls
-This is how a synchronous method call comes in and returns back:
+DSBridge-Swift has a Keystone that holds everything together.
+
+> A keystone is a stone at the top of an arch, which keeps the other stones in place by its weight and position. -- Collins Dictionary
+
+Here is how a synchronous method call comes in and returns back:
 
 <img src="https://github.com/EdgarDegas/DSBridge-Swift/blob/main/assets/image-20240326210400582.png?raw=true" width="500" />
 
+## Resolving Incoming Calls
+
 The `Keystone` converts raw text into an `Invocation`. You can change how it resolves raw text by changing `methodResolver` or `jsonSerializer` of `WebView.keystone`.
+
 ```swift
 import class DSBridge.Keystone
 // ...
@@ -217,21 +312,9 @@ import class DSBridge.Keystone
 // ...
 ```
 
-Your own jsonSerializer has to implement a two-method protocol `JSONSerializing`. Keep in mind that DSBridge needs it to encode the response into JSON on the way back. It's really ease, though, and you can then use SwiftyJSON or whatever you want:
-```swift
-struct MyJSONSerializer: JSONSerializing {
-    func readParamters(
-        from text: JSON?
-    ) throws -> IncomingInvocation.Signature {
-        
-    }
-    func serialize(_ object: Any) throws -> JSON {
-        
-    }
-}
-```
+There might be something you don't want in the built-in JSON serializer. For example it won't log details about an object or text in production environment. You can change this behavior by defining your own errors instead of using the ones defined in `DSBridge.Error.JSON`.
 
-`methodResolver: any MethodResolving` is even easier, it's a one-method protocol. You just read a text and return a `Method`:
+`methodResolver` is even easier. It simply reads a text and finds the namespace and method name:
 
 ```swift
 (webView.keystone as! Keystone).methodResolver = MyMethodResolver()
@@ -246,23 +329,22 @@ You can, of course, replace the dispatcher. Then you would have to manage interf
 (webView.keystone as! Keystone).invocationDispatcher = MyInvocationDispatcher()
 ```
 
-## JavaScriptEvaluation
+## JavaScript Evaluation
 
-This is how an asynchronous method call works:
+To explain to you how we can customize JavaScript evaluation, here's how an asynchronous invocation works.
+
+Everything is the same before the invocation reaches the dispatcher. The dispatcher returns an empty response immediately after it gets the invocation, so that the webpage gets to continue running. From now on, the synchronous chain breaks.
 
 <img src="https://github.com/EdgarDegas/DSBridge-Swift/blob/main/assets/image-20240326210427127.png?raw=true" width="500" />
 
-An empty response is returned immediately when it reaches the dispatcher. After that, the `Dispatcher` continues to dispatch the method call:
+Dispatcher sends the invocation to `Interface` at the same time. But since the way back no longer exists, DSBridge-Swift has to send the repsonse by evaluating JavaScript:
 
 <img src="https://github.com/EdgarDegas/DSBridge-Swift/blob/main/assets/image-20240326210448065.png?raw=true" width="500" />
 
-After the interface returned, the data is wrapped into an `AsyncResponse` and delivered to the JavaScript evaluator.
+The `JavaScriptEvaluator` is in charge of all the messages towards JavaScript, including method calls initiated from native. The default evaluator evaluates JavaScript every 50ms to avoid getting dropped by iOS for evaluating too frequently. 
 
-Guess what, you can substitute it with your own.
+If you need further optimization or you just want the vanilla experience instead, you can simply replace the `Keystone.javaScriptEvaluator`.
 
 ## Keystone
-As you can see from all above, the keystone is what holds everything together.
 
-> A keystone is a stone at the top of an arch, which [keeps](https://www.collinsdictionary.com/dictionary/english/keep "Definition of keeps") the other stones in place by its [weight](https://www.collinsdictionary.com/dictionary/english/weight "Definition of weight") and position. -- Collins Dictionary
-
-You can change the keystone, with either a `Keystone` subclass or a completely different `KeystoneProtocol`. Either way, you will be able to use DSBridge-Swift with any JavaScript.
+As you can see from all above, the keystone is what holds everything together. You can even change the keystone, with either a `Keystone` subclass or a completely different `KeystoneProtocol`. Either way, you will be able to use DSBridge-Swift with any JavaScript.

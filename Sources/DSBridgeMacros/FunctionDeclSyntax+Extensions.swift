@@ -13,25 +13,25 @@ extension FunctionDeclSyntax {
     }
     
     var isSynchronous: Bool {
-        !isAsynchronous
+        asynchronousCompletion == nil
     }
     
-    var isAsynchronous: Bool {
+    var asynchronousCompletion: FunctionTypeSyntax? {
         guard
             !returns,
             let lastParameter = signature.parameterClause.parameters.last
         else {
-            return false
+            return nil
         }
-        if lastParameter.type.is(FunctionTypeSyntax.self) {
-            return true
+        if let completion = lastParameter.type.as(FunctionTypeSyntax.self) {
+            return completion
         } else if let type = lastParameter.type
             .as(AttributedTypeSyntax.self)?
             .baseType
         {
-            return type.is(FunctionTypeSyntax.self)
+            return type.as(FunctionTypeSyntax.self)
         } else {
-            return false
+            return nil
         }
     }
 }

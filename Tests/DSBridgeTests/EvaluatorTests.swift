@@ -178,6 +178,32 @@ final class EvaluatorTests: XCTestCase {
         wait(for: [expectation])
     }
     
+    func testEvaluationArbitraryTimes() {
+        evaluator.initialize()
+        let count = 10000
+        let unit = count / 10
+        var p = 0
+        while p < count {
+            defer { p += unit }
+            DispatchQueue.main.asyncAfter(
+                deadline: .now() + 0.05
+            ) { [p] in
+                for i in p..<(p + unit) {
+                    self.evaluator.evaluate("\(i)")
+                }
+            }
+        }
+        let expectation = XCTestExpectation()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            let script = (0..<count).map {
+                "\($0)"
+            }.joined(separator: "\n")
+            XCTAssert(self.evaluated == script)
+            expectation.fulfill()
+        }
+        wait(for: [expectation])
+    }
+    
     static func scriptFor(
         calling functionName: String,
         with parameter: Any,
