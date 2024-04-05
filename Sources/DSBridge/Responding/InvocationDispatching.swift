@@ -55,32 +55,46 @@ open class InvocationDispatcher: InvocationDispatching {
             return .empty
         }
         if invocation.isSynchronous {
-            let data = interface.handle(
-                calling: method.name,
-                with: invocation.signature.parameter
-            )
-            return Response(code: .success, data: data)
+            return synchronousResponse(for: invocation, from: interface)
         } else {
-            interface.handle(
-                calling: method.name,
-                with: invocation.signature.parameter
-            ) { [weak self] resultAsJSON, completed in
-                guard let self else { return }
-                guard let functionName = invocation.signature.callbackFunctionName else {
-                    logger.logMessage(
-                        "Method marked non-synchronous has no callback.",
-                        at: .error
-                    )
-                    return
-                }
-                let response = AsyncResponse(
-                    functionName: functionName, 
-                    data: resultAsJSON,
-                    completed: completed
-                )
-                respondAsynchronously(response)
-            }
+            dispatch(invocation, asynchronouslyTo: interface)
             return .empty
+        }
+    }
+    
+    private func synchronousResponse(
+        for invocation: IncomingInvocation,
+        from interface: any ExposedInterface
+    ) -> Response {
+        let data = interface.handle(
+            calling: invocation.method.name,
+            with: invocation.signature.parameter
+        )
+        return Response(code: .success, data: data)
+    }
+    
+    private func dispatch(
+        _ invocation: IncomingInvocation,
+        asynchronouslyTo interface: any ExposedInterface
+    ) {
+        interface.handle(
+            calling: invocation.method.name,
+            with: invocation.signature.parameter
+        ) { [weak self] resultAsJSON, completed in
+            guard let self else { return }
+            guard let functionName = invocation.signature.callbackFunctionName else {
+                logger.logMessage(
+                    "Method marked non-synchronous has no callback.",
+                    at: .error
+                )
+                return
+            }
+            let response = AsyncResponse(
+                functionName: functionName,
+                data: resultAsJSON,
+                completed: completed
+            )
+            respondAsynchronously(response)
         }
     }
     
