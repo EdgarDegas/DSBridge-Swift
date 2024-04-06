@@ -94,7 +94,7 @@ enum EnumInterface {
 
 最后，将接口添加到 `WebView` 中。
 
-注意，第二个参数 `by` 传入的是命名空间，传入 `nil` 或空字符串，则该 `Interface` 没有命名空间。同时只能有一个没有命名空间的 `Interface`，每个命名空间下同时也只能有一个 `Interface`，如果重复则后来者居上：
+注意，通过第二个参数 `by`，你可以传入一个命名空间；若传入 `nil` 或空字符串，则该 `Interface` 没有命名空间。同时只能有一个没有命名空间的 `Interface`，每个命名空间下同时也只能有一个 `Interface`，如果重复则后来者居上：
 
 ```swift
 webView.addInterface(MyInterface(), by: nil)  // `nil` works the same as ""
@@ -133,7 +133,7 @@ bridge.call('asyncStyledFunction', function(v) { console.log(v) });
 
 可以看到，调用之后会立刻收到一个空字符串返回，这是符合期望的。而我们的异步返回值则是在传入的回调 function 中获得的。
 
-DSBridge 提供了一次调用、多次返回的功能，你只需要将给闭包增加一个 `Bool` 类型的参数，这个参数意味着是否已完成。响应时，若传入 `false`，表示未完成，以后你还可以再次调用这个闭包来发送响应；若传入 `true`，JS 端将删除回调函数，即不再接收对于本次调用的响应：
+DSBridge 提供了一次调用、多次返回的功能，你只需要给闭包增加一个 `Bool` 类型的参数，这个参数意味着是否已完成。响应时，若传入 `false`，可表达未完成，以后你还可以再次调用这个闭包来发送响应；若传入 `true`，JS 端将删除回调函数，即不再接收对于本次调用的响应：
 
 ```swift
 @Exposed
