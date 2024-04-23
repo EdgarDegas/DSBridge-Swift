@@ -71,6 +71,21 @@ final class DSBridgeTests: XCTestCase {
         wait(for: expectations)
     }
     
+    func testCallingNamespaceFromNative() {
+        let expectations = [XCTestExpectation(), XCTestExpectation()]
+        webView.call("syncFunctions.returnAsIs", with: [99], thatReturns: Int.self) {
+            let returned = try! $0.get()
+            XCTAssert(returned == 99)
+            expectations[0].fulfill()
+        }
+        webView.call("asyncFunctions.adding100", with: [7], thatReturns: Int.self) {
+            let returned = try! $0.get()
+            XCTAssert(returned == 107)
+            expectations[1].fulfill()
+        }
+        wait(for: expectations)
+    }
+    
     override func setUp() {
         Interface.testInvoked = false
         Interface.input = nil
@@ -87,11 +102,24 @@ final class DSBridgeTests: XCTestCase {
         webView.addInterface(interface, by: nil)
         webView.evaluateJavaScript(
             """
-            bridge.register('addValue', function(l, r){
-                 return l + r;
+            bridge.register('addValue', function(l, r) {
+              return l + r;
             })
-            bridge.registerAsyn('append', function(arg1, arg2, arg3, responseCallback){
-                 responseCallback(arg1 + " " + arg2 + " " + arg3);
+            
+            bridge.registerAsyn('append', function(arg1, arg2, arg3, respond) {
+              respond(arg1 + " " + arg2 + " " + arg3);
+            })
+            
+            bridge.register("syncFunctions",{
+              returnAsIs: function(v) {
+                return v
+              }
+            })
+            
+            bridge.registerAsyn("asyncFunctions",{
+              adding100: function(input, respond) {
+                respond(input + 100)
+              }
             })
             """
         ) { _, _ in
