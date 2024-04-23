@@ -12,7 +12,11 @@
 
 DSBridge-Swift is a [DSBridge-iOS](https://github.com/wendux/DSBridge-IOS) fork in Swift. It allows developers to send method calls back and forth between Swift and JavaScript.
 
-# Installation
+# Usage
+
+Check out [wiki](https://github.com/EdgarDegas/DSBridge-Swift/wiki) for docs.
+
+## Installation
 
 DSBridge is available on both iOS and Android. 
 
@@ -34,7 +38,7 @@ Or install with npm:
 npm install dsbridge@3.1.4
 ```
 
-# Usage
+# 
 
 ## Brief
 
@@ -164,70 +168,6 @@ bridge.call('asyncFunction', 1, function(v) { console.log(v) });
 // 3
 // 4
 ```
-
-# Declaration Rules
-## Allowed Interface Types
-You can declare your interface as these types:
-- class
-- enum
-- struct
-
-  > actors are not supported yet. Please file up your ideas about it.
-## Allowed Data Types
-You can receive or send the following types:
-- String
-- Int, Double (types toll-free bridged to NSNumber)
-- Bool
-- Standard JSON top-level objects:
-
-    - Dictionary that's encodable
-
-    - Array that's encodable
-
-
-## Allowed Function Declarations
-DSBridge-Swift ignores argument labels and parameter names of your functions. Thus you can name your parameters whatever you want.
-
-#### Synchronous Functions
-
-About parameters, synchronous functions can have:
-
-- 1 parameter, which is one of the above-mentioned *Allowed Data Types*
-- no parameter
-
-About return value, synchronous functions can have:
-
-- return value that's one of the above-mentioned *Allowed Data Types*
-- no return value
-
-For simplicity, we use `Allowed` to represent the before-mentioned Allowed Data Types.
-
-```swift
-func name()
-func name(Allowed)
-func name(Allowed) -> Allowed
-```
-#### Asynchronous Functions
-
-Asynchronous functions are allowed to have 1 or 2 parameters and no return value.
-
-If there are 2 parameters, the first one must be one of the above-mentioned *Allowed Data Types*.
-
-The last parameter has to be a closure that returns nothing (i.e., `Void`). For parameters, the closure can have:
-
-- 1 parameter, one of the above-mentioned *Allowed Data Types*
-- 2 parameters, the first one is one of the above-mentioned *Allowed Data Types* and the second one is a `Bool`
-
-```swift
-typealias Completion = (Allowed) -> Void
-typealias RepeatableCompletion = (Allowed, Bool) -> Void
-
-func name(Completion)
-func name(RepeatableCompletion)
-func name(Allowed, Completion)
-func name(Allowed, RepeatableCompletion)
-```
-Attribute your closure with `@ecaping` if needed. Otherwise, keep in mind that your functions run on the main thread and try not to block it.
 
 # Differences with DSBridge-iOS
 

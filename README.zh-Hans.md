@@ -9,7 +9,11 @@
 
 DSBridge-Swift 是 [DSBridge-iOS](https://github.com/wendux/DSBridge-IOS) 的一个 Swift 版 fork。它允许开发者在原生和 JavaScript 之间调用彼此的方法。
 
-# 集成方式
+# 使用
+
+在 [wiki](https://github.com/EdgarDegas/DSBridge-Swift/wiki) 中查看详细文档。
+
+## 集成
 
 DSBridge 是一个三端可用的 JavaScript Bridge。
 
@@ -20,6 +24,7 @@ DSBridge 是一个三端可用的 JavaScript Bridge。
 Android 端集成方式见 [DSBridge-Android](https://github.com/wendux/DSBridge-Android)。
 
 你可以通过 CDN 引入 JavaScript 代码（或下载 JS 文件并添加到工程中以避免网络问题）：
+
 ```html
 <script src="https://cdn.jsdelivr.net/npm/dsbridge@3.1.4/dist/dsbridge.js"></script>
 ```
@@ -29,8 +34,6 @@ Android 端集成方式见 [DSBridge-Android](https://github.com/wendux/DSBridge
 ```shell
 npm install dsbridge@3.1.4
 ```
-
-# 使用
 
 ## 简介
 
@@ -167,71 +170,6 @@ bridge.call('asyncFunction', 1, function(v) { console.log(v) });
 // 3
 // 4
 ```
-
-## `Interface` 声明规则
-
-### 支持的 `Interface` 类型
-
-你可以将 `Interface` 声明为 `class`、`struct` 或 `enum`。暂未支持 `actor`，欢迎大家的想法。
-
-### 支持的数据类型
-
-你可以发送或接收这些类型的数据：
-
-- String
-- Int, Double 等（与 NSNumber 无缝转换的类型）
-- Bool
-- 标准的 JSON 顶层对象：
-    - Dictionary，必须可编码为 JSON
-    - Array，必须可编码为 JSON
-
-### 支持的方法声明
-
-DSBridge-Swift 无视 `Interface` 中的方法的参数名，无论调用名还是内部名，因此你可以使用任意的参数名。
-
-#### 同步方法
-
-关于参数，同步方法只能：
-
-- 有 1 个参数，类型符合上述”支持的数据类型“
-
-- 没有参数
-
-关于返回值，同步方法可以：
-
-- 有返回值，类型符合上述”支持的数据类型“
-- 没有返回值
-
-为了简便，使用 `Allowed` 代指上面说的”支持的数据类型“：
-
-```swift
-func name()
-func name(Allowed)
-func name(Allowed) -> Allowed
-```
-
-#### 异步方法
-
-异步方法可以有 1 个或 2 个参数，不允许有返回值。
-
-如果有 2 个参数，第 1 个参数类型必须符合上述”支持的数据类型“。
-
-方法的最后一个参数必须是闭包，返回 `Void`。关于参数，闭包只能：
-
-- 有 1 个参数，类型符合上述”支持的数据类型“
-- 有 2 个参数，第 1 个类型符合上述”支持的数据类型“，第 2 个必须是 `Bool` 类型
-
-```swift
-typealias Completion = (Allowed) -> Void
-typealias RepeatableCompletion = (Allowed, Bool) -> Void
-
-func name(Completion)
-func name(RepeatableCompletion)
-func name(Allowed, Completion)
-func name(Allowed, RepeatableCompletion)
-```
-
-闭包可以是 `@escaping` 的；如果不是的话，请注意，你的方法应当快速执行、立即返回，否则将会阻塞主线程。
 
 # 与 DSBridge-iOS 的不同
 
