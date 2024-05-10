@@ -13,7 +13,15 @@ extension FunctionDeclSyntax {
     }
     
     var isSynchronous: Bool {
-        asynchronousCompletion == nil
+        !isAsychronous
+    }
+    
+    var isAsychronous: Bool {
+        if asynchronousCompletion != nil {
+            return true
+        }
+        let hasAsyncSpecifier = signature.effectSpecifiers?.asyncSpecifier != nil
+        return hasAsyncSpecifier
     }
     
     var asynchronousCompletion: FunctionTypeSyntax? {

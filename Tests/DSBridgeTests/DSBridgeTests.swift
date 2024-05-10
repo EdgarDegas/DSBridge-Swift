@@ -5,21 +5,33 @@ import WebKit
 final class DSBridgeTests: XCTestCase {
     @Exposed
     struct Interface {
-        static var testInvoked = false
         func test() {
             Self.testInvoked = true
         }
         func willReturn1() -> Int {
-            1
+            return 1
         }
         
-        static var input: Int?
         func input(_ value: Int) {
             Self.input = value
         }
-        static var asyncFuncReturnValue = 800
-        func asyncFunc(block: (Int) -> Void) {
-            block(Self.asyncFuncReturnValue)
+        
+        static var input: Int?
+        static var testInvoked = false
+        static var blockFuncReturnValue = 800
+        func blockFunc(block: (Int) -> Void) {
+            block(Self.blockFuncReturnValue)
+        }
+        
+        static var asyncReturningFuncReturnValue = 66
+        func asyncReturningFunc() async -> Int {
+            return Self.asyncReturningFuncReturnValue
+        }
+        
+        static var asyncFuncCalled = false
+        func asyncFunc() async {
+            try? await Task.sleep(for: .seconds(0.2))
+            Self.asyncFuncCalled = true
         }
     }
     
@@ -41,19 +53,45 @@ final class DSBridgeTests: XCTestCase {
         wait(for: expectations)
     }
     
-    func testCallingAsyncFromJavaScript() {
+    func testCallingBlockFunc() {
         let expectation = XCTestExpectation()
         runInJS("""
-        bridge.call('asyncFunc', function(returnValue){
+        bridge.call('blockFunc', function(returnValue){
             bridge.call('input', returnValue)
         })
         """) { _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                XCTAssert(Interface.input == Interface.asyncFuncReturnValue)
+                XCTAssert(Interface.input == Interface.blockFuncReturnValue)
                 expectation.fulfill()
             }
         }
         wait(for: [expectation])
+    }
+    
+    func testCallingAsyncReturningFunc() {
+        let expectation = XCTestExpectation()
+        runInJS("""
+        bridge.call('asyncReturningFunc', function(ret) { bridge.call('input', ret) })
+        """) { returned in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                XCTAssert(Interface.input == Interface.asyncReturningFuncReturnValue)
+                expectation.fulfill()
+            }
+        }
+        wait(for: [expectation])
+    }
+    
+    func testCallingAsyncFunc() {
+        let expectation = XCTestExpectation()
+        defer { wait(for: [expectation]) }
+        runInJS("""
+        bridge.call('asyncFunc', function() { })
+        """) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                XCTAssertTrue(Interface.asyncFuncCalled)
+                expectation.fulfill()
+            }
+        }
     }
     
     func testCallingFromNative() {
@@ -89,6 +127,7 @@ final class DSBridgeTests: XCTestCase {
     override func setUp() {
         Interface.testInvoked = false
         Interface.input = nil
+        Interface.asyncFuncCalled = false
     }
     
     override func invokeTest() {
