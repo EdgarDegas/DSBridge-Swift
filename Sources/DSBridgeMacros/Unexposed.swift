@@ -13,6 +13,7 @@ public struct Unexposed: PeerMacro {
         "unexposed"
     }
     
+    @preconcurrency
     static func declarationMarkedUnexposed(
         _ declaration: FunctionDeclSyntax
     ) -> Bool {
@@ -25,6 +26,7 @@ public struct Unexposed: PeerMacro {
         }
     }
     
+    @preconcurrency
     public static func expansion(
         of node: SwiftSyntax.AttributeSyntax,
         providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,

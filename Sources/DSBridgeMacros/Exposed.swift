@@ -9,6 +9,8 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 
 public struct Exposed: MemberMacro, ExtensionMacro {
+    
+    @preconcurrency
     public static func expansion(
         of node: AttributeSyntax,
         attachedTo declaration: some DeclGroupSyntax,
@@ -21,6 +23,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         )]
     }
     
+    @preconcurrency
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
@@ -116,6 +119,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         ]
     }
     
+    @preconcurrency
     static func getFunctions(
         of declaration: some DeclGroupSyntax
     ) -> [FunctionDeclSyntax] {
@@ -129,6 +133,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             }
     }
     
+    @preconcurrency
     static func dictionaryLiteral(
         of functions: [FunctionDeclSyntax]
     ) -> String {
@@ -142,6 +147,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         }
     }
     
+    @preconcurrency
     static func guardConvertingFunction(
         to type: String,
         else: String
@@ -152,6 +158,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         )
     }
     
+    @preconcurrency
     static func guardConvertingParameter(
         to type: String,
         else: String
@@ -162,6 +169,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         )
     }
     
+    @preconcurrency
     static func `guard`(
         _ text: String,
         else: String
@@ -175,10 +183,12 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         """
     }
     
+    @preconcurrency
     static func quoted(_ text: String) -> String {
         "\"\(text)\""
     }
     
+    @preconcurrency
     static func casesForAsynchronousFunctions(
         _ functions: [(FunctionDeclSyntax, FunctionTypeSyntax)]
     ) -> [String] {
@@ -199,6 +209,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
             )
         }
         
+        @preconcurrency
         func callingClause(
             numberOfParameters: Int,
             numberOfParametersInCompletion: Int
@@ -235,6 +246,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         }
     }
     
+    @preconcurrency
     static func casesForSynchronousFunctions(
         _ functions: [FunctionDeclSyntax]
     ) -> [String] {
@@ -274,6 +286,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         }
     }
     
+    @preconcurrency
     static func convertionClauses(
         function: FunctionDeclSyntax
     ) -> String {
@@ -289,6 +302,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         }
     }
     
+    @preconcurrency
     static func convertionClauses(
         function: FunctionDeclSyntax,
         parameterTypes: [TypeSyntax]
@@ -316,6 +330,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         }
     }
     
+    @preconcurrency
     static func convertionClausesForAsynchronousFunction(
         _ function: FunctionDeclSyntax,
         parameterTypes: [TypeSyntax]
@@ -345,6 +360,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         }
     }
     
+    @preconcurrency
     static func caseStatements(
         _ caseClause: String,
         convertion: String,
@@ -358,22 +374,26 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         """
     }
     
+    @preconcurrency
     static func caseClause(_ name: String) -> String {
         "case \(quoted(name)):"
     }
     
+    @preconcurrency
     static func parameterTypes(
         of signature: FunctionSignatureSyntax
     ) -> [TypeSyntax] {
         signature.parameterClause.parameters.map { $0.type }
     }
     
+    @preconcurrency
     static func returnType(
         of signature: FunctionSignatureSyntax
     ) -> TypeSyntax {
         signature.returnClause?.type ?? "Void"
     }
     
+    @preconcurrency
     static func closureTypeClause(
         parameterTypes: [TypeSyntax],
         returnType: TypeSyntax
@@ -384,6 +404,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         return "(\(parameterClause)) -> \(returnType)"
     }
     
+    @preconcurrency
     static func getString(
         from expression: StringLiteralExprSyntax
     ) -> String? {
