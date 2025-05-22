@@ -180,13 +180,18 @@ open class Keystone: KeystoneProtocol {
             deletingScript: String
         ) -> String {
             """
-            try {
                 let encodedData = "\(encodedData)";
-                let json =JSON.parse(decodeURIComponent(encodedData));
-                \(functionName)(json);
-                \(deletingScript);
+                let params = "";
+            try {
+                params =JSON.parse(decodeURIComponent(encodedData));
             } catch(e) {
-            
+                params =decodeURIComponent(encodedData);
+            }
+            try{
+                \(functionName)(params);
+                \(deletingScript);
+            } catch(e){
+                
             }
             """
         }
