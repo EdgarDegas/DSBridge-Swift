@@ -154,7 +154,7 @@ open class Keystone: KeystoneProtocol {
             var encoded = "";
             if let stringData = data as? String {
                 //如果是字符串 不执行json序列化
-                encoded = data;
+                encoded = stringData;
             }else{
                 encoded = try jsonSerializer.serialize(data)
             }
