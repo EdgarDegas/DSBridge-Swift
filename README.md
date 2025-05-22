@@ -20,7 +20,7 @@ Forked from https://github.com/EdgarDegas/DSBridge-Swift
 
 [^1]: Designed by [Freepik](https://freepik.com)
 
-[简体中文版](https://github.com/EdgarDegas/DSBridge-Swift/blob/main/README.zh-Hans.md)
+[简体中文版](https://github.com/1245040330/DSBridge-Swift/blob/main/README.zh-Hans.md)
 
 DSBridge-Swift is a [DSBridge-iOS](https://github.com/wendux/DSBridge-IOS) fork in Swift. It allows developers to send method calls back and forth between Swift and JavaScript.
 
