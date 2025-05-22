@@ -151,7 +151,14 @@ open class Keystone: KeystoneProtocol {
         let data = response.data
         let completed = response.completed
         do {
-            var encoded = try jsonSerializer.serialize(data)
+            var encoded = "";
+            if data is String {
+                //如果是字符串 不执行json序列化
+                encoded = data;
+            }else{
+                encoded = try jsonSerializer.serialize(data)
+            }
+             
             encoded = clStringConvert(encoded)
             let deletingScript = writeDeletingScript(
                 for: functionName, if: completed
