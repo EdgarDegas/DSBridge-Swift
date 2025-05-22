@@ -1,3 +1,15 @@
+
+#V1.0.6
+Optimized dsbridge
+
+New Features Added support for returning plain strings
+
+Fixes Fixed an issue in the writeScriptCallingBack function where single quotes (') in the callback string caused JavaScript execution errors
+
+Forked from https://github.com/EdgarDegas/DSBridge-Swift
+@EdgarDegas
+---
+
 [^1]
 
 <picture>
