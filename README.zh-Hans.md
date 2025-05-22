@@ -1,3 +1,10 @@
+# V1.0.6
+优化 dsbridge
+新增 支持返回纯字符串
+修复writeScriptCallingBack函数在拼接回调时 字符串中有单引号 ('')导致js端执行报错
+Fork 自 https://github.com/EdgarDegas/DSBridge-Swift
+@EdgarDegas
+
 [^1]
 
 <picture>
