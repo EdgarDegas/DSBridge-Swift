@@ -34,7 +34,6 @@ open class Keystone: KeystoneProtocol {
     open lazy var javaScriptEvaluator: any JavaScriptEvaluating =
         JavaScriptEvaluator
     { [weak self] script in
-        print(script)
         self?.evaluateJavaScript(script)
     }
     
@@ -177,7 +176,6 @@ open class Keystone: KeystoneProtocol {
             try {
                 let encodedData = "\(encodedData)";
                 let json =JSON.parse(decodeURIComponent(encodedData));
-                console.log(json)
                 \(functionName)(json);
                 \(deletingScript);
             } catch(e) {
