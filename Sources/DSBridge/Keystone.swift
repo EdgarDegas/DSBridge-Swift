@@ -173,7 +173,9 @@ open class Keystone: KeystoneProtocol {
         ) -> String {
             """
             try {
-                \(functionName)(JSON.parse(decodeURIComponent(`\(encodedData)`)));
+            let json =JSON.parse(decodeURIComponent("\(encodedData)"));
+            console.log(json)
+                \(functionName)(json);
                 \(deletingScript);
             } catch(e) {
             
