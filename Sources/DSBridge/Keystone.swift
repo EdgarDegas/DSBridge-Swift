@@ -217,17 +217,14 @@ open class Keystone: KeystoneProtocol {
     }
     
     //添加转义
-    func addEscapeCharactersToJSONString(_ string: String) -> String{
-        var escapedString = string
-        // 添加转义符号，转义常见的特殊字符
-        escapedString = escapedString.replacingOccurrences(of: "\\", with: "\\\\")
-        escapedString = escapedString.replacingOccurrences(of: "\"", with: "\\\"")
-        escapedString = escapedString.replacingOccurrences(of: "\n", with: "\\n")
-        escapedString = escapedString.replacingOccurrences(of: "\r", with: "\\r")
-        escapedString = escapedString.replacingOccurrences(of: "\t", with: "\\t")
-        escapedString = escapedString.replacingOccurrences(of: "\u{2028}", with: "\\u2028") // Line separator
-        escapedString = escapedString.replacingOccurrences(of: "\u{2029}", with: "\\u2029") // Paragraph separator
-        return escapedString
+      func addEscapeCharactersToJSONString(_ string: String) -> String {
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(string),
+           let jsonEscaped = String(data: data, encoding: .utf8) {
+            // 去掉两边的双引号（因为 encode(string) 会包一层引号）
+            return String(jsonEscaped.dropFirst().dropLast())
+        }
+        return string
     }
     
     //字符串转换
