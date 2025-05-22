@@ -152,7 +152,8 @@ open class Keystone: KeystoneProtocol {
         let data = response.data
         let completed = response.completed
         do {
-            let encoded = try jsonSerializer.serialize(data)
+            var encoded = try jsonSerializer.serialize(data)
+            encoded = clStringConvert(encoded)
             let deletingScript = writeDeletingScript(
                 for: functionName, if: completed
             )
@@ -195,6 +196,41 @@ open class Keystone: KeystoneProtocol {
                 ""
             }
         }
+         //判断字符串是否为json
+    func isValidJSON(_ string: String) -> Bool{
+        if let data = string.data(using: .utf8){
+            do{
+                _ = try JSONSerialization.jsonObject(with: data,options: []);
+                return true;
+            }catch{
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    //添加转义
+    func addEscapeCharactersToJSONString(_ string: String) -> String{
+        var escapedString = string
+        // 添加转义符号，转义常见的特殊字符
+        escapedString = escapedString.replacingOccurrences(of: "\\", with: "\\\\")
+        escapedString = escapedString.replacingOccurrences(of: "\"", with: "\\\"")
+        escapedString = escapedString.replacingOccurrences(of: "\n", with: "\\n")
+        escapedString = escapedString.replacingOccurrences(of: "\r", with: "\\r")
+        escapedString = escapedString.replacingOccurrences(of: "\t", with: "\\t")
+        escapedString = escapedString.replacingOccurrences(of: "\u{2028}", with: "\\u2028") // Line separator
+        escapedString = escapedString.replacingOccurrences(of: "\u{2029}", with: "\\u2029") // Paragraph separator
+        return escapedString
+    }
+    
+    //字符串转换
+    func clStringConvert(_ string:String) -> String{
+        if(isValidJSON(string)){
+            return addEscapeCharactersToJSONString(string);
+        }else{
+            return string;
+        }
+    }
     }
     
     open func handleRawInvocation(
