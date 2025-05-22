@@ -152,7 +152,7 @@ open class Keystone: KeystoneProtocol {
         let completed = response.completed
         do {
             var encoded = "";
-            if data is String {
+            if let stringData = data as? String {
                 //如果是字符串 不执行json序列化
                 encoded = data;
             }else{
