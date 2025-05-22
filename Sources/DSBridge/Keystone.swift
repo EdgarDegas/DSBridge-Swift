@@ -34,6 +34,7 @@ open class Keystone: KeystoneProtocol {
     open lazy var javaScriptEvaluator: any JavaScriptEvaluating =
         JavaScriptEvaluator
     { [weak self] script in
+        print(script)
         self?.evaluateJavaScript(script)
     }
     
