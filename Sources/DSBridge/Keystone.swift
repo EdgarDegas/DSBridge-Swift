@@ -171,13 +171,14 @@ open class Keystone: KeystoneProtocol {
             encodedData: String,
             deletingScript: String
         ) -> String {
-            """
-            try {
-                \(functionName)(JSON.parse(decodeURIComponent('\(encodedData)')));
-                \(deletingScript);
-            } catch(e) {
-            
-            }
+            let encodedString = encodedData.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "{}"
+            return """
+                try {
+                    \(functionName)(JSON.parse(decodeURIComponent('\(encodedString)')));
+                    \(deletingScript);
+                } catch(e) {
+                
+                }
             """
         }
         
