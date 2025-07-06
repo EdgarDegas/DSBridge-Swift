@@ -171,10 +171,15 @@ open class Keystone: KeystoneProtocol {
             encodedData: String,
             deletingScript: String
         ) -> String {
-            let encodedString = encodedData.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "{}"
+            let encoded = encodedData.addingPercentEncoding(
+                withAllowedCharacters: .urlQueryAllowed
+            )
+            if encoded == nil {
+                logger.logMessage("Percentage encoding returns nil. Could be some invalid unicode characters.", at: .error)
+            }
             return """
                 try {
-                    \(functionName)(JSON.parse(decodeURIComponent('\(encodedString)')));
+                    \(functionName)(JSON.parse(decodeURIComponent('\(encoded ?? "null")')));
                     \(deletingScript);
                 } catch(e) {
                 
