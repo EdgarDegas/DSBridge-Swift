@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by iMoe Nya on 2024/3/24.
 //
@@ -11,23 +11,23 @@ import ObjectiveC
 /*
  - (id) hasNativeMethod:(id) args
  {
-     return [self.webview onMessage:args type: DSB_API_HASNATIVEMETHOD];
+ return [self.webview onMessage:args type: DSB_API_HASNATIVEMETHOD];
  }
-
+ 
  - (id) closePage:(id) args{
-     return [self.webview onMessage:args type:DSB_API_CLOSEPAGE];
+ return [self.webview onMessage:args type:DSB_API_CLOSEPAGE];
  }
-
+ 
  - (id) returnValue:(NSDictionary *) args{
-     return [self.webview onMessage:args type:DSB_API_RETURNVALUE];
+ return [self.webview onMessage:args type:DSB_API_RETURNVALUE];
  }
-
+ 
  - (id) dsinit:(id) args{
-     return [self.webview onMessage:args type:DSB_API_DSINIT];
+ return [self.webview onMessage:args type:DSB_API_DSINIT];
  }
-
+ 
  - (id) disableJavaScriptDialogBlock:(id) args{
-     return [self.webview onMessage:args type:DSB_API_DISABLESAFETYALERTBOX];
+ return [self.webview onMessage:args type:DSB_API_DISABLESAFETYALERTBOX];
  }
  */
 
@@ -40,9 +40,9 @@ public enum PredefinedInvocation {
 
 /// Predefined methods for DSBridge's internal functions.
 ///
-/// Make sure the namespace and function names & signature always match with 
+/// Make sure the namespace and function names & signature always match with
 /// the definitions in JavaScript.
-@Exposed
+//@Exposed
 public final class PredefinedInterface {
     static var namespace: String {
         "_dsb"
@@ -90,5 +90,74 @@ public final class PredefinedInterface {
     
     func closePage() {
         _ = predefinedInvocationHandler(.close)
+    }
+}
+
+extension PredefinedInterface: ExposedInterface {
+    var synchronousFunctions: [String: Any] {
+        [
+            "returnValue": returnValue,
+            "dsinit": dsinit,
+            "hasNativeMethod": hasNativeMethod,
+            "closePage": closePage
+        ]
+    }
+    
+    var asynchronousFunctions: [String: Any] {
+        [
+            :
+        ]
+    }
+    
+    public func handle(
+        calling methodName: String,
+        with parameter: Any?
+    ) -> Any? {
+        let function = synchronousFunctions[methodName]
+        switch methodName {
+        case "returnValue":
+            guard
+                let parameter = parameter as? [String: Any]
+            else {
+                return nil
+            }
+            returnValue(parameter)
+        case "dsinit":
+            dsinit()
+        case "hasNativeMethod":
+            guard
+                let parameter = parameter as? [String: String]
+            else {
+                return nil
+            }
+            return hasNativeMethod(parameter)
+        case "closePage":
+            closePage()
+        default:
+            break
+        }
+        return nil
+    }
+    
+    public func handle(
+        calling methodName: String,
+        with parameter: Any?,
+        completion: @escaping (Any?, Bool) -> Void
+    ) {
+        
+    }
+    
+    public func hasMethod(
+        named name: String,
+        isSynchronous: Bool?
+    ) -> Bool {
+        if isSynchronous == true {
+            synchronousFunctions.keys.contains(name)
+        } else if isSynchronous == false {
+            asynchronousFunctions.keys.contains(name)
+        } else {
+            synchronousFunctions.keys.contains(name) ||
+            asynchronousFunctions.keys.contains(name)
+        }
     }
 }
