@@ -147,7 +147,7 @@ public struct Exposed: MemberMacro, ExtensionMacro {
         else: String
     ) -> String {
         `guard`(
-            "let function = function as? \(type)",
+            "let function = function as? @Sendable \(type)",
             else: `else`
         )
     }
